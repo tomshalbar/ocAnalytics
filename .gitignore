@@ -1,0 +1,19 @@
+# Node / React Native / Expo
+node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+*.log
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Env files
+.env
+.env.local
