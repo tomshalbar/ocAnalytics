@@ -13,3 +13,6 @@ venv/
 # Env files
 .env
 .env.local
+
+# large data files
+modeling/data/*.csv
