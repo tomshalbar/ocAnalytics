@@ -1,8 +1,4 @@
-# Node / React Native / Expo
-node_modules/
-mobile/.expo/
-mobile/dist/
-mobile/web-build/
+# OS
 *.log
 .DS_Store
 
