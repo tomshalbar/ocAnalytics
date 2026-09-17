@@ -15,21 +15,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install requests pandas "psycopg[binary]" python-dotenv
+          environment-file: environment.yml
+          activate-environment: osa_env
+          auto-activate-base: false
 
       - name: Create data directory
+        shell: bash -el {0}
+        working-directory: .
         run: mkdir -p modeling/data
 
-      - name: Run RecSports scraper
+      - name: Run RecSports pipeline
+        shell: bash -el {0}
+        working-directory: .
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          python modeling/src/scrapers/rec_sport_scraper.py
+          python -m modeling.src.scrape_pipeline

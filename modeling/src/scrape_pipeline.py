@@ -17,3 +17,4 @@ if __name__ == "__main__":
     if not success:
         print("Database insert failed")
         sys.exit(1)
+    print(f"Successfully scraped and inserted {len(data_df)} rows.")
