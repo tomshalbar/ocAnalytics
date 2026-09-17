@@ -1,4 +1,4 @@
-name: RecSports Scraper
+name: RecSports Data Ingestion
 
 on:
   schedule:
@@ -28,8 +28,8 @@ jobs:
       - name: Create data directory
         run: mkdir -p modeling/data
 
-      - name: Run RecSports scraper
+      - name: Run RecSports ingestion
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          python modeling/src/scrapers/rec_sport_scraper.py
+          python -m modeling.src.ingestion.recsports_ingest
