@@ -2,7 +2,7 @@ name: RecSports Scraper
 
 on:
   schedule:
-    - cron: "*/10 5-23 * * *"
+    - cron: "3-59/10 5-23 * * *"
       timezone: "America/New_York"
 
   workflow_dispatch:
@@ -20,7 +20,6 @@ jobs:
         with:
           environment-file: environment.yml
           activate-environment: osa_env
-          auto-activate-base: false
 
       - name: Create data directory
         shell: bash -el {0}
