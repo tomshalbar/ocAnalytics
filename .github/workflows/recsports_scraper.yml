@@ -1,0 +1,36 @@
+name: RecSports Scraper
+
+on:
+  schedule:
+    - cron: "*/10 5-23 * * *"
+      timezone: "America/New_York"
+
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment.yml
+          activate-environment: osa_env
+          auto-activate-base: false
+
+      - name: Create data directory
+        shell: bash -el {0}
+        working-directory: .
+        run: mkdir -p modeling/data
+
+      - name: Run RecSports pipeline
+        shell: bash -el {0}
+        working-directory: .
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python -m modeling.src.scrape_pipeline
