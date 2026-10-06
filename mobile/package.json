@@ -29,15 +29,20 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "^57.0.2",
+    "prettier": "^3.9.9",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write src app.json package.json tsconfig.json README.md eslint.config.js --end-of-line auto",
+    "format:check": "prettier --check src app.json package.json tsconfig.json README.md eslint.config.js --end-of-line auto"
   },
   "private": true
 }
