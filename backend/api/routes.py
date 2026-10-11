@@ -31,3 +31,19 @@ def get_latest_location(location_id: int):
         )
 
     return row
+
+@router.get("/locations/latest")
+def get_latest_locations():
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT DISTINCT ON ("LocationId") *
+                FROM raw_recsports_data
+                ORDER BY "LocationId", "runDatetime" DESC;
+                """
+            )
+
+            rows = cur.fetchall()
+
+    return rows
