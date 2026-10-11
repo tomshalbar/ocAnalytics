@@ -111,10 +111,17 @@ def get_location_stats(
             )
 
             stats = cur.fetchone()
+            if stats["total_readings"] == 0:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No occupancy data found for this location and date range"
+                )
 
-    return {
-        "location_id": location_id,
-        "start": start,
-        "end": end,
-        "statistics": stats
-    }
+            return {
+                "location_id": location_id,
+                "start": start,
+                "end": end,
+                "statistics": stats
+            }
+
+    
