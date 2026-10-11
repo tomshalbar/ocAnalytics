@@ -78,3 +78,43 @@ def get_location_history(
             rows = cur.fetchall()
 
     return rows
+
+
+@router.get("/locations/{location_id}/stats")
+def get_location_stats(
+    location_id: int,
+    start: datetime,
+    end: datetime
+):
+    if start >= end:
+        raise HTTPException(
+            status_code=400,
+            detail="Start time must be before end time"
+        )
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    COUNT(*) AS total_readings,
+                    ROUND(AVG("LastCount"), 2) AS average_count,
+                    MIN("LastCount") AS minimum_count,
+                    MAX("LastCount") AS maximum_count
+                FROM raw_recsports_data
+                WHERE "LocationId" = %s
+                  AND "runDatetime" >= %s
+                  AND "runDatetime" <= %s
+                  AND "IsClosed" = false;
+                """,
+                (location_id, start, end)
+            )
+
+            stats = cur.fetchone()
+
+    return {
+        "location_id": location_id,
+        "start": start,
+        "end": end,
+        "statistics": stats
+    }
