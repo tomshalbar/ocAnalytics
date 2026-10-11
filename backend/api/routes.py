@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from backend.db.database import get_db_connection
+from datetime import datetime
 
 
 router = APIRouter()
@@ -42,6 +43,36 @@ def get_latest_locations():
                 FROM raw_recsports_data
                 ORDER BY "LocationId", "runDatetime" DESC;
                 """
+            )
+
+            rows = cur.fetchall()
+
+    return rows
+
+@router.get("/locations/{location_id}/history")
+def get_location_history(
+    location_id: int,
+    start: datetime,
+    end: datetime
+):
+    if start >= end:
+        raise HTTPException(
+            status_code=400,
+            detail="Start time must be before end time"
+        )
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT *
+                FROM raw_recsports_data
+                WHERE "LocationId" = %s
+                  AND "runDatetime" >= %s
+                  AND "runDatetime" <= %s
+                ORDER BY "runDatetime" ASC;
+                """,
+                (location_id, start, end)
             )
 
             rows = cur.fetchall()
