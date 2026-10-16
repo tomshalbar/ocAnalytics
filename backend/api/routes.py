@@ -32,6 +32,31 @@ def get_latest_location(location_id: int):
         )
 
     return row
+@router.get("/locations/{location_id}/summary")
+def get_location_summary(location_id: int):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    "LocationId" AS location_id,
+                    "LastCount" AS count,
+                    "IsClosed" AS is_closed,
+                    "runDatetime" AS last_updated
+                FROM raw_recsports_data
+                WHERE "LocationId" = %s
+                ORDER BY "runDatetime" DESC
+                LIMIT 1;
+            """, (location_id,))
+
+            row = cur.fetchone()
+
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Location not found"
+        )
+
+    return row
 
 @router.get("/locations/latest")
 def get_latest_locations():
