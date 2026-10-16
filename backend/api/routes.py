@@ -124,4 +124,42 @@ def get_location_stats(
                 "statistics": stats
             }
 
-    
+
+@router.get("/locations/{location_id}/trends")
+def get_location_trends(location_id: int, start: datetime, end: datetime):
+    if start >= end:
+        raise HTTPException(
+            status_code=400,
+            detail="Start time must be before end time"
+        )
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    EXTRACT(HOUR FROM "runDatetime")::int AS hour,
+                    ROUND(AVG("LastCount"), 2) AS average_count,
+                    COUNT(*) AS total_readings
+                FROM raw_recsports_data
+                WHERE "LocationId" = %s
+                  AND "runDatetime" >= %s
+                  AND "runDatetime" <= %s
+                  AND "IsClosed" = false
+                GROUP BY EXTRACT(HOUR FROM "runDatetime")
+                ORDER BY hour;
+            """, (location_id, start, end))
+
+            rows = cur.fetchall()
+
+    if not rows:
+        raise HTTPException(
+            status_code=404,
+            detail="No occupancy data found for this location and date range"
+        )
+
+    return {
+        "location_id": location_id,
+        "start": start,
+        "end": end,
+        "hourly_averages": rows
+    }
