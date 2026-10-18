@@ -45,5 +45,3 @@ def insert_into_database(scraped_df: pd.DataFrame) -> bool:
     except Exception as e:
         print(f"failed to insert scraped data: {e}")
         return False
-    finally:
-        conn.close()
