@@ -54,3 +54,59 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Connect to the backend (mobile)
+
+Copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_API_URL`.
+Use your computer LAN IP on a phone, `http://10.0.2.2:8000` on an Android
+emulator, or `http://127.0.0.1:8000` on an iOS simulator. Start the backend
+with `uvicorn backend.main:app --host 0.0.0.0 --port 8000`, then restart Expo.
+Never put database credentials in an `EXPO_PUBLIC_` variable.
+
+## Backend connection layer
+
+`src/data/api/locations.ts` provides `getLocations(locationId, signal)` for the
+latest list or an individual source location. It validates responses and handles
+configuration, network and HTTP errors. `useLocations(locationId?)` manages
+loading, errors, refresh, cancellation and a 15-second timeout on native screens.
+
+The original Home and area detail screens, cards and navigation are preserved.
+They still use the explicitly labeled demo fixtures. The request layer is ready
+for the frontend owner to connect once each existing area ID has a verified
+RecSports LocationId. Do not guess mappings or interpret participant counts as
+available courts. No UI components or screen design changes are required by the
+request layer.
+
+Example inside a screen or adapter owned by the frontend team:
+
+```tsx
+// Use a verified source LocationId, not the frontend slug.
+const { rows, loading, error, notFound, refresh } =
+  useLocations(sourceLocationId);
+```
+
+Import `useLocations` from `@/data/api/use-locations`. Without an argument the
+hook requests all latest readings. A future adapter should map source readings
+to the existing domain model only where their meanings match. The backend does
+not currently provide free-court counts or verified crowd categories.
+
+## Validation
+
+```bash
+npm run typecheck
+npm run lint
+```
+
+The connection layer has been exercised against the real backend. Native device
+verification and binding the original screens to verified area mappings remain
+pending. Original screens intentionally remain demo previews until then.
+
+Run the API client tests with Node.js 24 or newer (no live database required):
+
+```bash
+node --experimental-transform-types --test tests/locations.test.mjs
+```
+
+These cover configuration, URLs, response validation, empty lists, error status,
+network failure, cancellation signal forwarding and freshness labels. They do
+not replace native UI testing of the hook lifecycle and screen integration.
