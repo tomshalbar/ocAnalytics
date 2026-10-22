@@ -5,7 +5,11 @@ import { Screen } from "@/components/layout/screen";
 import { AppText } from "@/components/ui/app-text";
 import { Card } from "@/components/ui/card";
 import { useLocations } from "@/data/api/use-locations";
-import { formatReadingTime, readingStatus } from "@/data/api/locations";
+import {
+  formatReadingTime,
+  readingStatus,
+  getRequestTimeoutMs,
+} from "@/data/api/locations";
 
 function ApiProbe() {
   const [locationId, setLocationId] = useState<string | undefined>();
@@ -89,8 +93,8 @@ function ApiProbe() {
         <AppText variant="heading">Connection recovery test</AppText>
         <AppText>
           Stop only Uvicorn on the computer, then tap Refresh. Expect an error
-          within 15 seconds. Restart Uvicorn and tap Retry; expect success. Keep
-          Expo running.
+          within {getRequestTimeoutMs() / 1000} seconds. Restart Uvicorn and tap
+          Retry; expect success. Keep Expo running.
         </AppText>
       </View>
     </Screen>

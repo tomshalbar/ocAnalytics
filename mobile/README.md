@@ -68,7 +68,7 @@ Never put database credentials in an `EXPO_PUBLIC_` variable.
 `src/data/api/locations.ts` provides `getLocations(locationId, signal)` for the
 latest list or an individual source location. It validates responses and handles
 configuration, network and HTTP errors. `useLocations(locationId?)` manages
-loading, errors, refresh, cancellation and a 15-second timeout on native screens.
+loading, errors, refresh, cancellation and a configurable timeout (15 seconds by default) on native screens.
 
 The original Home and area detail screens, cards and navigation are preserved.
 They still use the explicitly labeled demo fixtures. The request layer is ready
@@ -110,3 +110,11 @@ node --experimental-transform-types --test tests/locations.test.mjs
 These cover configuration, URLs, response validation, empty lists, error status,
 network failure, cancellation signal forwarding and freshness labels. They do
 not replace native UI testing of the hook lifecycle and screen integration.
+
+### Render cold-start timeout
+
+Set `EXPO_PUBLIC_API_TIMEOUT_MS=90000` in `mobile/.env.local` and restart Expo
+for a 90-second request timeout. This gives Render time to wake but does not
+guarantee startup within that time. Loading and Retry behavior are unchanged.
+Valid settings are whole milliseconds from 1000 to 300000; missing or invalid
+settings fall back to 15000. Leaving the screen still cancels requests immediately.

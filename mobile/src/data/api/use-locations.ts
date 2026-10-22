@@ -1,6 +1,11 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "expo-router";
-import { ApiError, getLocations, type LocationReading } from "./locations";
+import {
+  ApiError,
+  getLocations,
+  getRequestTimeoutMs,
+  type LocationReading,
+} from "./locations";
 
 export function useLocations(locationId?: string) {
   const [rows, setRows] = useState<LocationReading[]>([]);
@@ -14,7 +19,7 @@ export function useLocations(locationId?: string) {
       // Revision is the explicit manual-refresh token.
       void revision;
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 15000);
+      const timer = setTimeout(() => controller.abort(), getRequestTimeoutMs());
       setLoading(true);
       setError(null);
       setNotFound(false);
