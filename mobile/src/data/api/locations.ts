@@ -93,3 +93,15 @@ export function readingStatus(row: LocationReading) {
 export function formatReadingTime(value: string | null) {
   return value ? new Date(value).toLocaleString() : "Not provided";
 }
+
+// Invalid or excessive configuration falls back to 15 seconds.
+export function getRequestTimeoutMs(
+  value: string | undefined = process.env.EXPO_PUBLIC_API_TIMEOUT_MS,
+): number {
+  const milliseconds = Number(value);
+  return Number.isInteger(milliseconds) &&
+    milliseconds >= 1000 &&
+    milliseconds <= 300000
+    ? milliseconds
+    : 15000;
+}

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  getRequestTimeoutMs,
   ApiError,
   getLocations,
   readingStatus,
@@ -115,5 +116,33 @@ test("API client contract and failure handling", async (t) => {
     globalThis.fetch = originalFetch;
     if (originalUrl === undefined) delete process.env.EXPO_PUBLIC_API_URL;
     else process.env.EXPO_PUBLIC_API_URL = originalUrl;
+  }
+});
+
+test("request timeout configuration", () => {
+  for (const value of ["90000", " 90000 ", "1000", "300000"]) {
+    assert.equal(getRequestTimeoutMs(value), Number(value));
+  }
+  for (const value of [
+    "",
+    "abc",
+    "0",
+    "-1",
+    "999",
+    "300001",
+    "1.5",
+    "Infinity",
+  ]) {
+    assert.equal(getRequestTimeoutMs(value), 15000);
+  }
+  const original = process.env.EXPO_PUBLIC_API_TIMEOUT_MS;
+  try {
+    delete process.env.EXPO_PUBLIC_API_TIMEOUT_MS;
+    assert.equal(getRequestTimeoutMs(), 15000);
+    process.env.EXPO_PUBLIC_API_TIMEOUT_MS = "90000";
+    assert.equal(getRequestTimeoutMs(), 90000);
+  } finally {
+    if (original === undefined) delete process.env.EXPO_PUBLIC_API_TIMEOUT_MS;
+    else process.env.EXPO_PUBLIC_API_TIMEOUT_MS = original;
   }
 });
