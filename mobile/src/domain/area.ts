@@ -3,10 +3,10 @@ export type CrowdLevel = "quiet" | "moderate" | "busy" | "unknown";
 
 export type Area = {
   id: string;
-  gymId: string;
+  gymId: string | null;
   name: string;
-  kind: "court" | "room" | "zone";
-  activity: Activity;
+  kind: "court" | "room" | "zone" | "location";
+  activity: Activity | null;
   // Only populate after verifying the RecSports location-to-area mapping.
   sourceLocationId: number | null;
 };

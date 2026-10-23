@@ -90,8 +90,8 @@ export function PreferencesScreen() {
             <AppText tone="muted">{connection.error}</AppText>
           )}
           <AppText variant="caption" tone="muted">
-            Health check only. Occupancy data is not loaded; screens still use
-            demo previews. This check does not verify database availability.
+            This health check verifies the server. Home, location details, and
+            Trends load occupancy data separately and report their own errors.
           </AppText>
           <Button
             title="Check connection"

@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   toAreaObservation,
   toAreaStatistics,
+  areaForLocation,
 } from "../src/data/adapters/locations.ts";
 import {
   availabilityLabel,
@@ -30,6 +31,16 @@ const reading = {
   is_stale: false,
   collection_is_stale: false,
 };
+
+test("live source identities do not acquire unverified names or activities", () => {
+  const source = areaForLocation(123);
+  assert.equal(source.id, "123");
+  assert.equal(source.name, "Location 123");
+  assert.equal(source.gymId, null);
+  assert.equal(source.activity, null);
+  assert.equal(source.kind, "location");
+  assert.equal(toAreaObservation(source, reading).sourceLocationId, 123);
+});
 
 test("only an explicit matching location mapping can populate an area", () => {
   assert.equal(

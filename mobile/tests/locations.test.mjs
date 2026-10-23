@@ -7,6 +7,8 @@ import {
   readingStatus,
   formatReadingTime,
   checkBackendConnection,
+  getLocationHistory,
+  getLocationStatistics,
 } from "../src/data/api/locations.ts";
 
 const reading = {
@@ -146,6 +148,172 @@ test("API client contract and failure handling", async (t) => {
         /Cannot reach the backend/,
       );
     });
+    const range = {
+      start: "2026-10-18T00:00:00Z",
+      end: "2026-10-19T00:00:00Z",
+    };
+    await t.test(
+      "history sends encoded bounds and pagination, preserves rows and empty pages",
+      async () => {
+        const second = { ...reading, id: 2, LastCount: null };
+        globalThis.fetch = async (url, options) => {
+          const parsed = new URL(url);
+          assert.equal(parsed.pathname, "/locations/3367/history");
+          assert.equal(parsed.searchParams.get("start"), range.start);
+          assert.equal(parsed.searchParams.get("end"), range.end);
+          assert.equal(parsed.searchParams.get("limit"), "50");
+          assert.equal(parsed.searchParams.get("offset"), "100");
+          assert.equal(options.signal, signal);
+          return { ok: true, json: async () => [reading, second] };
+        };
+        assert.deepEqual(
+          await getLocationHistory(
+            "3367",
+            { ...range, limit: 50, offset: 100 },
+            signal,
+          ),
+          [reading, second],
+        );
+        globalThis.fetch = async () => ({ ok: true, json: async () => [] });
+        assert.deepEqual(await getLocationHistory("3367", range, signal), []);
+      },
+    );
+    await t.test(
+      "history rejects invalid pages and time ranges before requesting",
+      async () => {
+        globalThis.fetch = async () => assert.fail("must not fetch");
+        for (const query of [
+          { ...range, limit: 0 },
+          { ...range, limit: 1001 },
+          { ...range, offset: -1 },
+          { ...range, offset: 100001 },
+          { ...range, start: range.end },
+          { ...range, start: "2026-10-18T00:00:00" },
+          { ...range, end: "2026-12-19T00:00:00Z" },
+        ])
+          await assert.rejects(
+            getLocationHistory("3367", query, signal),
+            ApiError,
+          );
+      },
+    );
+    await t.test(
+      "history rejects invalid and cross-location responses",
+      async () => {
+        for (const data of [
+          {},
+          [{ ...reading, LocationId: 999 }],
+          [{ ...reading, runDatetime: "invalid" }],
+        ]) {
+          globalThis.fetch = async () => ({ ok: true, json: async () => data });
+          await assert.rejects(
+            getLocationHistory("3367", range, signal),
+            /unexpected response/,
+          );
+        }
+      },
+    );
+    await t.test(
+      "statistics preserves counts and represents 404 as an empty summary",
+      async () => {
+        const response = {
+          location_id: 3367,
+          ...range,
+          statistics: {
+            total_readings: 5,
+            average_count: 2.4,
+            minimum_count: 0,
+            maximum_count: null,
+          },
+        };
+        globalThis.fetch = async (url, options) => {
+          assert.equal(new URL(url).pathname, "/locations/3367/stats");
+          assert.equal(new URL(url).searchParams.get("start"), range.start);
+          assert.equal(options.signal, signal);
+          return { ok: true, json: async () => response };
+        };
+        assert.deepEqual(
+          await getLocationStatistics("3367", range, signal),
+          response,
+        );
+        globalThis.fetch = async () => ({ ok: false, status: 404 });
+        assert.equal(await getLocationStatistics("3367", range, signal), null);
+        await assert.rejects(
+          getLocationHistory("3367", range, signal),
+          (e) => e.status === 404,
+        );
+      },
+    );
+    await t.test(
+      "statistics rejects wrong identities, ranges, and malformed values",
+      async () => {
+        const response = {
+          location_id: 3367,
+          ...range,
+          statistics: {
+            total_readings: 5,
+            average_count: 2.4,
+            minimum_count: 0,
+            maximum_count: 6,
+          },
+        };
+        for (const data of [
+          null,
+          {},
+          { ...response, location_id: 999 },
+          { ...response, start: "2026-10-17T00:00:00Z" },
+          {
+            ...response,
+            statistics: { ...response.statistics, total_readings: -1 },
+          },
+          {
+            ...response,
+            statistics: { ...response.statistics, average_count: "2.4" },
+          },
+        ]) {
+          globalThis.fetch = async () => ({ ok: true, json: async () => data });
+          await assert.rejects(
+            getLocationStatistics("3367", range, signal),
+            /unexpected response/,
+          );
+        }
+      },
+    );
+    await t.test(
+      "history and statistics preserve server errors and handle invalid JSON",
+      async () => {
+        for (const request of [getLocationHistory, getLocationStatistics]) {
+          globalThis.fetch = async () => ({ ok: false, status: 503 });
+          await assert.rejects(
+            request("3367", range, signal),
+            (e) => e.status === 503,
+          );
+          globalThis.fetch = async () => ({
+            ok: true,
+            json: async () => {
+              throw new SyntaxError();
+            },
+          });
+          await assert.rejects(
+            request("3367", range, signal),
+            /unexpected response/,
+          );
+        }
+      },
+    );
+    await t.test(
+      "single latest reading rejects another location's response",
+      async () => {
+        globalThis.fetch = async () => ({
+          ok: true,
+          json: async () => ({ ...reading, LocationId: 999 }),
+        });
+        await assert.rejects(
+          getLocations("3367", signal),
+          /unexpected response/,
+        );
+      },
+    );
     await t.test("staleness takes precedence over open status", () => {
       assert.match(readingStatus({ ...reading, is_stale: true }), /Outdated/);
       assert.match(

@@ -4,6 +4,18 @@ import type {
 } from "../api/location-contracts";
 import type { Area, AreaObservation, AreaStatistics } from "../../domain/area";
 
+// The API has no verified names or activities. Source IDs are safe fallback labels.
+export function areaForLocation(locationId: number): Area {
+  return {
+    id: String(locationId),
+    gymId: null,
+    name: `Location ${locationId}`,
+    kind: "location",
+    activity: null,
+    sourceLocationId: locationId,
+  };
+}
+
 // Pure adapters only: no requests, inferred metadata, or count conversions.
 export function toAreaObservation(
   area: Area,

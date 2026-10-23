@@ -28,7 +28,13 @@ export function AreaCard({ area, observation }: Props) {
       >
         <Card>
           <View style={styles.row}>
-            <AppIcon name={activityIcons[area.activity]} />
+            <AppIcon
+              name={
+                area.activity
+                  ? activityIcons[area.activity]
+                  : "location-outline"
+              }
+            />
             <AppText variant="heading" style={styles.name}>
               {area.name}
             </AppText>
@@ -36,6 +42,9 @@ export function AreaCard({ area, observation }: Props) {
           </View>
           <AppText>{observationStatus(observation)}</AppText>
           <AppText tone="muted">{availabilityLabel(observation)}</AppText>
+          <AppText variant="caption" tone="muted">
+            Source facility: {observation?.sourceFacilityId ?? "Not provided"}
+          </AppText>
         </Card>
       </Pressable>
     </Link>
