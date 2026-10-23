@@ -6,6 +6,7 @@ import {
   getLocations,
   readingStatus,
   formatReadingTime,
+  checkBackendConnection,
 } from "../src/data/api/locations.ts";
 
 const reading = {
@@ -35,6 +36,56 @@ test("API client contract and failure handling", async (t) => {
       );
     });
     process.env.EXPO_PUBLIC_API_URL = "http://example.test/";
+    await t.test(
+      "connection check only calls the health endpoint",
+      async () => {
+        globalThis.fetch = async (url, options) => {
+          assert.equal(url, "http://example.test/");
+          assert.equal(options.signal, signal);
+          return {
+            ok: true,
+            json: async () => ({
+              message: "Open Court Analytics API is running",
+            }),
+          };
+        };
+        assert.equal(await checkBackendConnection(signal), undefined);
+      },
+    );
+    await t.test(
+      "health check validates server identity and failure responses",
+      async () => {
+        for (const data of [null, {}, [], { message: "Another server" }]) {
+          globalThis.fetch = async () => ({ ok: true, json: async () => data });
+          await assert.rejects(
+            checkBackendConnection(signal),
+            /unexpected health response/,
+          );
+        }
+        globalThis.fetch = async () => ({
+          ok: true,
+          json: async () => {
+            throw new SyntaxError();
+          },
+        });
+        await assert.rejects(
+          checkBackendConnection(signal),
+          /unexpected health response/,
+        );
+        globalThis.fetch = async () => ({ ok: false, status: 503 });
+        await assert.rejects(
+          checkBackendConnection(signal),
+          (error) => error instanceof ApiError && error.status === 503,
+        );
+        globalThis.fetch = async () => {
+          throw new Error("network");
+        };
+        await assert.rejects(
+          checkBackendConnection(signal),
+          /Cannot reach the backend/,
+        );
+      },
+    );
     await t.test("list URL and cancellation signal", async () => {
       globalThis.fetch = async (url, options) => {
         assert.equal(url, "http://example.test/locations/latest");

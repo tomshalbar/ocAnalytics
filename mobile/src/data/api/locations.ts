@@ -11,6 +11,46 @@ export class ApiError extends Error {
   }
 }
 
+function getApiBaseUrl() {
+  const base = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
+  if (!base)
+    throw new ApiError(
+      "Set EXPO_PUBLIC_API_URL to your backend address, then restart Expo.",
+    );
+  return base;
+}
+
+// Connectivity only. The root endpoint does not query occupancy or the database.
+export async function checkBackendConnection(
+  signal: AbortSignal,
+): Promise<void> {
+  const base = getApiBaseUrl();
+  let response: Response;
+  try {
+    response = await fetch(`${base}/`, { signal });
+  } catch {
+    throw new ApiError("Cannot reach the backend. Please retry.");
+  }
+  if (!response.ok)
+    throw new ApiError(
+      "Backend server is unavailable. Please retry.",
+      response.status,
+    );
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    throw new ApiError("The backend returned an unexpected health response.");
+  }
+  if (
+    !data ||
+    typeof data !== "object" ||
+    !("message" in data) ||
+    data.message !== "Open Court Analytics API is running"
+  )
+    throw new ApiError("The backend returned an unexpected health response.");
+}
+
 function isReading(value: unknown): value is LocationReading {
   if (!value || typeof value !== "object") return false;
   const row = value as Record<string, unknown>;
@@ -37,11 +77,7 @@ export async function getLocations(
   locationId: string | undefined,
   signal: AbortSignal,
 ): Promise<LocationReading[]> {
-  const base = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
-  if (!base)
-    throw new ApiError(
-      "Set EXPO_PUBLIC_API_URL to your backend address, then restart Expo.",
-    );
+  const base = getApiBaseUrl();
   if (locationId !== undefined && !/^\d+$/.test(locationId)) {
     throw new ApiError("This location does not exist.", 404);
   }
