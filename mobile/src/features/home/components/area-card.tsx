@@ -4,10 +4,12 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { AppIcon } from "@/components/ui/app-icon";
 import { AppText } from "@/components/ui/app-text";
 import { Card } from "@/components/ui/card";
-import { CrowdBadge } from "@/components/ui/crowd-badge";
 import type { Area, AreaObservation } from "@/domain/area";
 import { activityIcons } from "@/features/areas/activity-options";
-import { availabilityLabel } from "@/features/areas/availability-label";
+import {
+  availabilityLabel,
+  observationStatus,
+} from "@/features/areas/availability-label";
 import { spacing } from "@/theme/tokens";
 
 type Props = { area: Area; observation?: AreaObservation };
@@ -20,20 +22,29 @@ export function AreaCard({ area, observation }: Props) {
     >
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={`${area.name}, ${availabilityLabel(observation)}`}
-        accessibilityHint="Open area availability and patterns"
+        accessibilityLabel={`${area.name}, ${observationStatus(observation)}, ${availabilityLabel(observation)}`}
+        accessibilityHint="Open area readings and history"
         style={({ pressed }) => pressed && styles.pressed}
       >
         <Card>
           <View style={styles.row}>
-            <AppIcon name={activityIcons[area.activity]} />
+            <AppIcon
+              name={
+                area.activity
+                  ? activityIcons[area.activity]
+                  : "location-outline"
+              }
+            />
             <AppText variant="heading" style={styles.name}>
               {area.name}
             </AppText>
             <AppIcon name="chevron-forward" size={18} />
           </View>
-          <CrowdBadge level={observation?.crowdLevel ?? "unknown"} />
+          <AppText>{observationStatus(observation)}</AppText>
           <AppText tone="muted">{availabilityLabel(observation)}</AppText>
+          <AppText variant="caption" tone="muted">
+            Source facility: {observation?.sourceFacilityId ?? "Not provided"}
+          </AppText>
         </Card>
       </Pressable>
     </Link>
