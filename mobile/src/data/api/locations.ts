@@ -1,16 +1,6 @@
-export type LocationReading = {
-  id: number;
-  LocationId: number;
-  FacilityId: number | null;
-  CountOfParticipants: number | null;
-  PercetageCapacity: number | null;
-  LastCount: number | null;
-  IsClosed: boolean | null;
-  LastUpdatedDateAndTime: string | null;
-  runDatetime: string;
-  is_stale: boolean;
-  collection_is_stale: boolean;
-};
+import type { LocationReading } from "./location-contracts";
+
+export type { LocationReading } from "./location-contracts";
 
 export class ApiError extends Error {
   constructor(
