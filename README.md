@@ -130,3 +130,13 @@ python -m unittest discover -s backend/tests -v
 ```
 
 Tests use database mocks and do not read or write the live database.
+
+## Deploy the backend
+
+See [backend deployment instructions](docs/backend-deployment.md) for the Render
+configuration, Supabase environment variables, and phone verification steps.
+The deployment smoke check is read-only:
+
+```bash
+python scripts/check_deployment.py https://YOUR-ASSIGNED-URL.onrender.com
+```
