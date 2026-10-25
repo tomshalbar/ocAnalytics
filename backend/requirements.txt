@@ -1,0 +1,5 @@
+# FastAPI serving dependencies; notebooks and the scraper are not deployed.
+fastapi==0.141.1
+uvicorn==0.53.0
+psycopg[binary]==3.3.5
+python-dotenv==1.2.3

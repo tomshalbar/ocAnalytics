@@ -9,9 +9,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(PROJECT_ROOT / ".env")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL not found")
 
 
 def get_db_connection():
-    return psycopg.connect(DATABASE_URL, row_factory=dict_row, prepare_threshold=None)
+    if not DATABASE_URL:
+        raise psycopg.OperationalError("DATABASE_URL is not configured")
+    return psycopg.connect(DATABASE_URL, row_factory=dict_row,
+                           prepare_threshold=None, connect_timeout=10)

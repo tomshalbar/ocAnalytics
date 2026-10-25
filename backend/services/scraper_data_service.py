@@ -38,6 +38,8 @@ def insert_into_database(scraped_df: pd.DataFrame) -> bool:
     )
 
     try:
+        # Psycopg 3 commits/rolls back and closes the connection on exit.
+        # A separate finally could reference conn before assignment if connect fails.
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.executemany(insert_sql, rows)
@@ -45,5 +47,3 @@ def insert_into_database(scraped_df: pd.DataFrame) -> bool:
     except Exception as e:
         print(f"failed to insert scraped data: {e}")
         return False
-    finally:
-        conn.close()
