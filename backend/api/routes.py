@@ -51,6 +51,25 @@ def observation(row):
     return result
 
 
+@router.get("/locations/{location_id}/summary")
+def get_location_summary(location_id: int):
+    row = query('''
+        SELECT
+            "LocationId" AS location_id,
+            "LastCount" AS count,
+            "IsClosed" AS is_closed,
+            "runDatetime" AS last_updated
+        FROM raw_recsports_data
+        WHERE "LocationId" = %s
+        ORDER BY "runDatetime" DESC, id DESC
+        LIMIT 1
+    ''', (location_id,))
+
+    if row is None:
+        raise HTTPException(404, "Location not found")
+
+    return row
+
 def time_range(start, end):
     if start.tzinfo is None or end.tzinfo is None:
         raise HTTPException(400, "start and end must include a timezone offset")
@@ -91,6 +110,38 @@ def get_location_history(location_id: int, start: datetime, end: datetime,
         ORDER BY "runDatetime" ASC, id ASC LIMIT %s OFFSET %s''',
         (location_id, *bounds, limit, offset), many=True)
     return [observation(row) for row in rows]
+
+
+@router.get("/locations/{location_id}/trends")
+def get_location_trends(location_id: int, start: datetime, end: datetime):
+    bounds = time_range(start, end)
+
+    rows = query('''
+        SELECT
+            EXTRACT(HOUR FROM "runDatetime")::int AS hour,
+            ROUND(AVG("LastCount"), 2) AS average_count,
+            COUNT(*) AS total_readings
+        FROM raw_recsports_data
+        WHERE "LocationId" = %s
+          AND "runDatetime" >= %s
+          AND "runDatetime" < %s
+          AND "IsClosed" = false
+          AND "LastCount" IS NOT NULL
+        GROUP BY EXTRACT(HOUR FROM "runDatetime")
+        ORDER BY hour
+    ''', (location_id, *bounds), many=True)
+
+    if not rows:
+        raise HTTPException(
+            404, "No occupancy data found for this location and date range"
+        )
+
+    return {
+        "location_id": location_id,
+        "start": start,
+        "end": end,
+        "hourly_averages": rows
+    }
 
 
 @router.get("/locations/{location_id}/stats", response_model=StatisticsResponse)
