@@ -52,3 +52,36 @@ test("count axis starts at zero and covers the largest reported value", () => {
   }
   assert.deepEqual(buildReadingChart([]).months, []);
 });
+
+test("combines adjacent equal counts on the same calendar date", () => {
+  const first = snapshot(1, 12, 2026, 11, 5);
+  const second = {
+    ...snapshot(2, 12, 2026, 11, 5),
+    runDatetime: new Date(2026, 10, 5, 13).toISOString(),
+  };
+  const third = {
+    ...snapshot(3, 12, 2026, 11, 5),
+    runDatetime: new Date(2026, 10, 5, 14).toISOString(),
+  };
+  const chart = buildReadingChart([third, first, second]);
+  assert.deepEqual(chart.months[0].bars, [
+    { id: first.id, count: 12, collectedAt: first.runDatetime },
+  ]);
+  assert.equal(chart.omittedCount, 0);
+});
+
+test("keeps matching counts separate across dates or intervening readings", () => {
+  const chart = buildReadingChart([
+    snapshot(1, 12, 2026, 11, 5),
+    snapshot(2, 8, 2026, 11, 5),
+    snapshot(3, 12, 2026, 11, 5),
+    snapshot(4, 12, 2026, 11, 6),
+    snapshot(5, null, 2026, 11, 6),
+    snapshot(6, 12, 2026, 11, 6),
+  ]);
+  assert.deepEqual(
+    chart.months[0].bars.map((bar) => bar.id),
+    [1, 2, 3, 4, 6],
+  );
+  assert.equal(chart.omittedCount, 1);
+});

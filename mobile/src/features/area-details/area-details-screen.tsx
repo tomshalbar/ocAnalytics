@@ -129,7 +129,7 @@ export function AreaDetailsScreen({ areaId }: { areaId: string }) {
       </Section>
       <Section
         title="Reading history"
-        description="Last reported count for each snapshot, oldest first. Month abbreviations are shown once per month. Each page contains up to 50 snapshots."
+        description="Last reported counts, oldest first. Consecutive snapshots with the same date and count are combined. Months are labeled once. Each page contains up to 50 snapshots."
       >
         <RequestState
           loading={history.loading}
@@ -145,24 +145,6 @@ export function AreaDetailsScreen({ areaId }: { areaId: string }) {
             description="An empty page does not establish that this location was closed."
           />
         )}
-        <AppText variant="caption" tone="muted">
-          Page {Math.floor(offset / PAGE_SIZE) + 1}
-        </AppText>
-        <Button
-          title="Previous page"
-          disabled={history.loading || offset === 0}
-          onPress={() => setOffset((value) => Math.max(0, value - PAGE_SIZE))}
-        />
-        <Button
-          title="Next page"
-          disabled={
-            history.loading ||
-            !!history.error ||
-            history.data?.length !== PAGE_SIZE ||
-            offset + PAGE_SIZE > 100000
-          }
-          onPress={() => setOffset((value) => value + PAGE_SIZE)}
-        />
       </Section>
     </Screen>
   );

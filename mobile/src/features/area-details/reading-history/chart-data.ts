@@ -7,6 +7,7 @@ export function buildReadingChart(readings: readonly LocationReading[]) {
   const months = new Map<string, ReadingMonth>();
   let maximum = 0;
   let plottedCount = 0;
+  let previous: { day: string; count: number } | undefined;
 
   const ordered = [...readings].sort(
     (a, b) => Date.parse(a.runDatetime) - Date.parse(b.runDatetime),
@@ -19,11 +20,17 @@ export function buildReadingChart(readings: readonly LocationReading[]) {
       !Number.isFinite(count) ||
       count < 0 ||
       !Number.isFinite(date.getTime())
-    )
+    ) {
+      previous = undefined;
       continue;
+    }
 
     const month = date.getMonth() + 1;
     const key = `${date.getFullYear()}-${month}`;
+    const day = `${key}-${date.getDate()}`;
+    plottedCount += 1;
+    if (previous?.day === day && previous.count === count) continue;
+    previous = { day, count };
     if (!months.has(key)) months.set(key, { key, month, bars: [] });
     months.get(key)!.bars.push({
       id: reading.id,
@@ -31,7 +38,6 @@ export function buildReadingChart(readings: readonly LocationReading[]) {
       collectedAt: reading.runDatetime,
     });
     maximum = Math.max(maximum, count);
-    plottedCount += 1;
   }
 
   // Four equal intervals with whole-number, readable count ticks.

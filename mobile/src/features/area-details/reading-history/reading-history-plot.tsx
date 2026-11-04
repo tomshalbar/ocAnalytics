@@ -4,9 +4,9 @@ import { AppText } from "@/components/ui/app-text";
 import { spacing } from "@/theme/tokens";
 import { useAppTheme } from "@/theme/use-app-theme";
 import type { ReadingMonth } from "./chart-data";
+import { ReadingHistoryBar } from "./reading-history-bar";
 
 export const PLOT_HEIGHT = 180;
-const BAR_SLOT_WIDTH = 18;
 const MONTH_LABELS = [
   "Jan",
   "Feb",
@@ -25,9 +25,13 @@ const MONTH_LABELS = [
 export function ReadingHistoryPlot({
   months,
   maximum,
+  selectedId,
+  onSelect,
 }: {
   months: ReadingMonth[];
   maximum: number;
+  selectedId: number | null;
+  onSelect: (id: number) => void;
 }) {
   const { colors } = useAppTheme();
 
@@ -46,22 +50,13 @@ export function ReadingHistoryPlot({
           <View key={key} style={[styles.month, { flexGrow: bars.length }]}>
             <View style={styles.bars}>
               {bars.map((bar) => (
-                <View
+                <ReadingHistoryBar
                   key={bar.id}
-                  accessible
-                  accessibilityLabel={`${new Date(bar.collectedAt).toLocaleString()}: last reported count ${bar.count}`}
-                  style={styles.barSlot}
-                >
-                  <View
-                    style={[
-                      styles.bar,
-                      {
-                        height: (bar.count / maximum) * PLOT_HEIGHT,
-                        backgroundColor: colors.accent,
-                      },
-                    ]}
-                  />
-                </View>
+                  bar={bar}
+                  height={(bar.count / maximum) * PLOT_HEIGHT}
+                  selected={bar.id === selectedId}
+                  onSelect={onSelect}
+                />
               ))}
             </View>
             <AppText variant="caption" tone="muted" style={styles.monthLabel}>
@@ -88,19 +83,5 @@ const styles = StyleSheet.create({
   months: { flexDirection: "row" },
   month: { minWidth: 32 },
   bars: { height: PLOT_HEIGHT, flexDirection: "row", alignItems: "flex-end" },
-  barSlot: {
-    flex: 1,
-    minWidth: BAR_SLOT_WIDTH,
-    height: PLOT_HEIGHT,
-    justifyContent: "flex-end",
-    alignItems: "center",
-    paddingHorizontal: 3,
-  },
-  bar: {
-    width: "100%",
-    maxWidth: 28,
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
-  },
   monthLabel: { textAlign: "left", marginTop: spacing.sm },
 });

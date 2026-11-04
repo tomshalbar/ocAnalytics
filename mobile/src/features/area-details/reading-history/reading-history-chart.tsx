@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { AppText } from "@/components/ui/app-text";
@@ -15,6 +15,10 @@ export function ReadingHistoryChart({
   readings: readonly LocationReading[];
 }) {
   const chart = useMemo(() => buildReadingChart(readings), [readings]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const selected = chart.months
+    .flatMap((month) => month.bars)
+    .find((bar) => bar.id === selectedId);
 
   if (chart.months.length === 0)
     return (
@@ -41,11 +45,21 @@ export function ReadingHistoryChart({
           contentContainerStyle={styles.content}
           accessibilityLabel="Reading history. Scroll horizontally to explore snapshots."
         >
-          <ReadingHistoryPlot months={chart.months} maximum={chart.maximum} />
+          <ReadingHistoryPlot
+            months={chart.months}
+            maximum={chart.maximum}
+            selectedId={selected?.id ?? null}
+            onSelect={setSelectedId}
+          />
         </ScrollView>
       </View>
       <AppText variant="caption" tone="muted" style={styles.axisTitle}>
         Month
+      </AppText>
+      <AppText variant="caption" accessibilityLiveRegion="polite">
+        {selected
+          ? `Last reported count: ${selected.count} — ${new Date(selected.collectedAt).toLocaleString("en-US", { month: "2-digit", day: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })}`
+          : "Tap a bar to see its last reported count, date, and time."}
       </AppText>
       {chart.omittedCount > 0 && (
         <AppText variant="caption" tone="muted">
