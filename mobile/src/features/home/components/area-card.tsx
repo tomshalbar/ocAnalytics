@@ -42,9 +42,6 @@ export function AreaCard({ area, observation }: Props) {
           </View>
           <AppText>{observationStatus(observation)}</AppText>
           <AppText tone="muted">{availabilityLabel(observation)}</AppText>
-          <AppText variant="caption" tone="muted">
-            Source facility: {observation?.sourceFacilityId ?? "Not provided"}
-          </AppText>
         </Card>
       </Pressable>
     </Link>

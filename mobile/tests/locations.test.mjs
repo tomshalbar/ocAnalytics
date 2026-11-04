@@ -96,6 +96,28 @@ test("API client contract and failure handling", async (t) => {
       };
       assert.deepEqual(await getLocations(undefined, signal), [reading]);
     });
+    await t.test("irrelevant locations are excluded from the latest list", async () => {
+      globalThis.fetch = async () => ({
+        ok: true,
+        json: async () => [reading, { ...reading, id: 2, LocationId: 11263 }],
+      });
+      assert.deepEqual(await getLocations(undefined, signal), [reading]);
+    });
+    await t.test("irrelevant locations cannot be requested directly", async () => {
+      globalThis.fetch = async () => assert.fail("must not fetch");
+      const range = {
+        start: "2026-10-18T00:00:00Z",
+        end: "2026-10-19T00:00:00Z",
+      };
+      for (const id of ["11263", "011263"]) {
+        await assert.rejects(getLocations(id, signal), (e) => e.status === 404);
+        await assert.rejects(
+          getLocationHistory(id, range, signal),
+          (e) => e.status === 404,
+        );
+        assert.equal(await getLocationStatistics(id, range, signal), null);
+      }
+    });
     await t.test("single result has consistent list shape", async () => {
       globalThis.fetch = async (url) => {
         assert.equal(url, "http://example.test/locations/3367/latest");

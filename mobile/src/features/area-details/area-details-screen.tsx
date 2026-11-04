@@ -13,7 +13,7 @@ import {
   toAreaObservation,
   toAreaStatistics,
 } from "@/data/adapters/locations";
-import { getLocationHistory } from "@/data/api/locations";
+import { getLocationHistory, isVisibleLocation } from "@/data/api/locations";
 import { useApiResource } from "@/data/api/use-api-resource";
 import { useLocations } from "@/data/api/use-locations";
 import { useLocationStatistics } from "@/data/api/use-location-statistics";
@@ -57,7 +57,11 @@ export function AreaDetailsScreen({ areaId }: { areaId: string }) {
     setRangeRevision((value) => value + 1);
   };
 
-  if (latest.notFound || !/^\d+$/.test(areaId))
+  if (
+    latest.notFound ||
+    !/^\d+$/.test(areaId) ||
+    !isVisibleLocation(Number(areaId))
+  )
     return (
       <Screen headerShown refreshing={refreshing} onRefresh={refresh}>
         <EmptyState

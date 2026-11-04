@@ -8,6 +8,10 @@ import type {
 
 export type { LocationReading } from "./location-contracts";
 
+export function isVisibleLocation(locationId: number): boolean {
+  return locationId !== 11263;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -84,7 +88,10 @@ export async function getLocations(
   signal: AbortSignal,
 ): Promise<LocationReading[]> {
   const base = getApiBaseUrl();
-  if (locationId !== undefined && !/^\d+$/.test(locationId)) {
+  if (
+    locationId !== undefined &&
+    (!/^\d+$/.test(locationId) || !isVisibleLocation(Number(locationId)))
+  ) {
     throw new ApiError("This location does not exist.", 404);
   }
   const path =
@@ -123,7 +130,7 @@ export async function getLocations(
     )
   )
     throw new ApiError("The backend returned an unexpected response.");
-  return rows;
+  return rows.filter((row) => isVisibleLocation(row.LocationId));
 }
 
 function rangeQuery(range: LocationTimeRange) {
@@ -148,7 +155,7 @@ async function getLocationResource(
   query: string,
   signal: AbortSignal,
 ): Promise<unknown> {
-  if (!/^\d+$/.test(locationId))
+  if (!/^\d+$/.test(locationId) || !isVisibleLocation(Number(locationId)))
     throw new ApiError("This location does not exist.", 404);
   let response: Response;
   try {
