@@ -62,19 +62,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="preferences"
-        options={{
-          title: "Preferences",
-          tabBarIcon: ({ color, size, focused }) => (
-            <AppIcon
-              name={focused ? "options" : "options-outline"}
-              color={color}
-              size={size}
-            />
-          ),
-        }}
-      />
     </Tabs>
   );
 }
