@@ -9,7 +9,7 @@ import type {
 export type { LocationReading } from "./location-contracts";
 
 export function isVisibleLocation(locationId: number): boolean {
-  return locationId !== 11263;
+  return locationId !== 11263 && locationId !== 9494;
 }
 
 export class ApiError extends Error {

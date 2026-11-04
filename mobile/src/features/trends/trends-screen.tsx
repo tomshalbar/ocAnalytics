@@ -9,6 +9,7 @@ import { areaForLocation, toAreaStatistics } from "@/data/adapters/locations";
 import { useLocations } from "@/data/api/use-locations";
 import { getLocationStatistics } from "@/data/api/locations";
 import { useApiResource } from "@/data/api/use-api-resource";
+import { facilityFilterId } from "@/data/reference/source-facilities";
 import { RequestState } from "@/features/areas/request-state";
 import { StatisticsCard } from "@/features/areas/statistics-card";
 
@@ -17,13 +18,6 @@ const rangeOptions = [
   { value: "7", label: "Past 7 days" },
   { value: "30", label: "Past 30 days" },
 ] as const;
-
-function facilityFilterId(facilityId: number | null): string {
-  if (facilityId === 596) return "Southwest Rec";
-  return facilityId === 597 || facilityId === 725
-    ? "Student Rec"
-    : String(facilityId ?? "unknown");
-}
 
 export function TrendsScreen() {
   const locations = useLocations();
