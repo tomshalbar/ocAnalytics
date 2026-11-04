@@ -1,47 +1,109 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Screen } from "@/components/layout/screen";
 import { ScreenHeading } from "@/components/layout/screen-heading";
 import { Section } from "@/components/layout/section";
 import { ChoiceGroup } from "@/components/ui/choice-group";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  activityLabels,
-  activityOptions,
-  type ActivityFilter,
-} from "@/features/areas/activity-options";
+import { areaForLocation, toAreaStatistics } from "@/data/adapters/locations";
+import { useLocations } from "@/data/api/use-locations";
+import { useLocationStatistics } from "@/data/api/use-location-statistics";
+import { RequestState } from "@/features/areas/request-state";
+import { StatisticsCard } from "@/features/areas/statistics-card";
+
+const rangeOptions = [
+  { value: "1", label: "Past 24 hours" },
+  { value: "7", label: "Past 7 days" },
+  { value: "30", label: "Past 30 days" },
+] as const;
 
 export function TrendsScreen() {
-  const [activity, setActivity] = useState<ActivityFilter>("all");
-  const subject =
-    activity === "all"
-      ? "your gym areas"
-      : activityLabels[activity].toLowerCase();
+  const locations = useLocations();
+  const [selectedId, setSelectedId] = useState<string>();
+  const [days, setDays] = useState("7");
+  const locationId = locations.rows.some(
+    (row) => String(row.LocationId) === selectedId,
+  )
+    ? selectedId
+    : locations.rows[0]
+      ? String(locations.rows[0].LocationId)
+      : undefined;
+  const range = useMemo(() => {
+    void locationId;
+    const end = new Date();
+    return {
+      start: new Date(end.getTime() - Number(days) * 86400000).toISOString(),
+      end: end.toISOString(),
+    };
+  }, [locationId, days]);
+  const statistics = useLocationStatistics(locationId, range);
+  const area = locationId ? areaForLocation(Number(locationId)) : undefined;
+  const summary =
+    area && statistics.data && toAreaStatistics(area, statistics.data);
+
   return (
     <Screen>
       <ScreenHeading
-        title="Weekly patterns"
-        subtitle="Get to know the rhythm of your gym."
+        title="Historical readings"
+        subtitle="Compare last reported counts over a date range."
       />
-      <Section title="Choose an activity">
+      <RequestState
+        loading={locations.loading}
+        error={locations.error}
+        refresh={locations.refresh}
+      />
+      <Section title="Choose a source location">
+        {locations.rows.length > 0 && (
+          <ChoiceGroup
+            label="Source location"
+            options={locations.rows.map((row) => ({
+              value: String(row.LocationId),
+              label: `Location ${row.LocationId}`,
+            }))}
+            value={locationId!}
+            onChange={setSelectedId}
+          />
+        )}
+        {!locations.loading &&
+          !locations.error &&
+          locations.rows.length === 0 && (
+            <EmptyState
+              title="No locations available"
+              description="Source locations will appear after the backend collects readings."
+            />
+          )}
+      </Section>
+      <Section title="Date range">
         <ChoiceGroup
-          label="Filter weekly patterns by activity"
-          options={activityOptions}
-          value={activity}
-          onChange={setActivity}
+          label="Statistics date range"
+          options={rangeOptions}
+          value={days}
+          onChange={setDays}
         />
       </Section>
-      <Section title="A week at a glance">
-        <EmptyState
-          title="Building the bigger picture"
-          description={`Once historical data is connected, compare activity across days and hours for ${subject}.`}
-        />
-      </Section>
+      {locationId && (
+        <Section title="Snapshot summary">
+          <RequestState
+            loading={statistics.loading}
+            error={statistics.error}
+            refresh={statistics.refresh}
+          />
+          {summary && (
+            <StatisticsCard title={area!.name} statistics={summary} />
+          )}
+          {!statistics.loading && !statistics.error && !summary && (
+            <EmptyState
+              title="No valid summary readings"
+              description="There are no reported-open snapshots with a LastCount in this date range."
+            />
+          )}
+        </Section>
+      )}
       <Section title="Insights">
         <EmptyState
           icon="bulb-outline"
-          title="Your next good time to go"
-          description="Recurring quiet windows and peak hours will appear here as patterns become available."
+          title="Predictions are not yet available"
+          description="The API provides snapshot summaries, not hourly patterns or suggested visit times."
         />
       </Section>
     </Screen>
