@@ -18,36 +18,30 @@ const rangeOptions = [
   { value: "30", label: "Past 30 days" },
 ] as const;
 
+function facilityFilterId(facilityId: number | null): string {
+  if (facilityId === 596) return "Southwest Rec";
+  return facilityId === 597 || facilityId === 725
+    ? "Student Rec"
+    : String(facilityId ?? "unknown");
+}
+
 export function TrendsScreen() {
   const locations = useLocations();
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>();
   const [days, setDays] = useState("7");
   const [rangeRevision, setRangeRevision] = useState(0);
-  const facilityOptions = Array.from(
-    new Set(locations.rows.map((row) => String(row.FacilityId ?? "unknown"))),
-    (id) => ({ value: id, label: id === "unknown" ? "Not provided" : id }),
-  );
-  const facilityId = facilityOptions.some(
-    (option) => option.value === selectedFacilityId,
-  )
-    ? selectedFacilityId
-    : facilityOptions[0]?.value;
   const locationIds = useMemo(
-    () =>
-      locations.rows
-        .filter((row) => String(row.FacilityId ?? "unknown") === facilityId)
-        .map((row) => String(row.LocationId)),
-    [locations.rows, facilityId],
+    () => locations.rows.map((row) => String(row.LocationId)),
+    [locations.rows],
   );
   const range = useMemo(() => {
-    void facilityId;
     void rangeRevision;
     const end = new Date();
     return {
       start: new Date(end.getTime() - Number(days) * 86400000).toISOString(),
       end: end.toISOString(),
     };
-  }, [facilityId, days, rangeRevision]);
+  }, [days, rangeRevision]);
   const loadStatistics = useCallback(
     (signal: AbortSignal) =>
       Promise.all(
@@ -58,12 +52,30 @@ export function TrendsScreen() {
   const statistics = useApiResource(
     locationIds.length > 0 ? loadStatistics : null,
   );
-  const summaries = (statistics.data ?? []).flatMap((response) => {
-    if (!response) return [];
+  const allSummaries = (statistics.data ?? []).flatMap((response) => {
+    if (!response || response.statistics.total_readings === 0) return [];
+    const location = locations.rows.find(
+      (row) => row.LocationId === response.location_id,
+    );
+    if (!location) return [];
     const area = areaForLocation(response.location_id);
     const summary = toAreaStatistics(area, response);
-    return summary ? [{ area, summary }] : [];
+    return summary
+      ? [{ area, summary, facilityId: facilityFilterId(location.FacilityId) }]
+      : [];
   });
+  const facilityOptions = Array.from(
+    new Set(allSummaries.map((entry) => entry.facilityId)),
+    (id) => ({ value: id, label: id === "unknown" ? "Not provided" : id }),
+  );
+  const facilityId = facilityOptions.some(
+    (option) => option.value === selectedFacilityId,
+  )
+    ? selectedFacilityId
+    : facilityOptions[0]?.value;
+  const summaries = allSummaries.filter(
+    (entry) => entry.facilityId === facilityId,
+  );
 
   return (
     <Screen
@@ -85,7 +97,16 @@ export function TrendsScreen() {
         variant="inline"
       />
       <Section title="Choose a source location">
-        {locations.rows.length > 0 && (
+        {(statistics.loading || statistics.error) && (
+          <RequestState
+            loading={statistics.loading}
+            error={statistics.error}
+            refresh={statistics.refresh}
+            showRefresh={false}
+            variant="inline"
+          />
+        )}
+        {facilityOptions.length > 0 && (
           <ChoiceGroup
             label="Source facility"
             options={facilityOptions}
@@ -95,10 +116,12 @@ export function TrendsScreen() {
         )}
         {!locations.loading &&
           !locations.error &&
-          locations.rows.length === 0 && (
+          !statistics.loading &&
+          !statistics.error &&
+          facilityOptions.length === 0 && (
             <EmptyState
-              title="No locations available"
-              description="Source locations will appear after the backend collects readings."
+              title="No summary entries available"
+              description="No source facilities have valid summary readings in this date range."
             />
           )}
       </Section>
@@ -112,15 +135,6 @@ export function TrendsScreen() {
       </Section>
       {facilityId && (
         <Section title="Snapshot summary">
-          {(statistics.loading || statistics.error) && (
-            <RequestState
-              loading={statistics.loading}
-              error={statistics.error}
-              refresh={statistics.refresh}
-              showRefresh={false}
-              variant="inline"
-            />
-          )}
           {summaries.map(({ area, summary }) => (
             <StatisticsCard
               key={area.id}
@@ -128,14 +142,6 @@ export function TrendsScreen() {
               statistics={summary}
             />
           ))}
-          {!statistics.loading &&
-            !statistics.error &&
-            summaries.length === 0 && (
-              <EmptyState
-                title="No valid summary readings"
-                description="There are no reported-open snapshots with a LastCount in this date range."
-              />
-            )}
         </Section>
       )}
       <Section title="Insights">
