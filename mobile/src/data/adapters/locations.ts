@@ -3,13 +3,13 @@ import type {
   LocationStatisticsResponse,
 } from "../api/location-contracts";
 import type { Area, AreaObservation, AreaStatistics } from "../../domain/area";
+import { locationName } from "../reference/location-names.ts";
 
-// The API has no verified names or activities. Source IDs are safe fallback labels.
 export function areaForLocation(locationId: number): Area {
   return {
     id: String(locationId),
     gymId: null,
-    name: `Location ${locationId}`,
+    name: locationName(locationId),
     kind: "location",
     activity: null,
     sourceLocationId: locationId,

@@ -36,6 +36,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "generate:location-names": "node scripts/generate-location-names.mjs",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",

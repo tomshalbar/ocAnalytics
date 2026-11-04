@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import {
   toAreaObservation,
@@ -32,7 +35,32 @@ const reading = {
   collection_is_stale: false,
 };
 
-test("live source identities do not acquire unverified names or activities", () => {
+test("location display names match every CSV entry and preserve backend identities", () => {
+  execFileSync(process.execPath, [
+    fileURLToPath(
+      new URL("../scripts/generate-location-names.mjs", import.meta.url),
+    ),
+    "--check",
+  ]);
+  const [ids, names] = readFileSync(
+    new URL("../src/data/reference/id_to_name.csv", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\r?\n/)
+    .map((row) => row.split(",").map((value) => value.trim()));
+  ids.forEach((id, index) => {
+    const source = areaForLocation(Number(id));
+    assert.equal(source.name, names[index]);
+    assert.equal(source.id, id);
+    assert.equal(source.sourceLocationId, Number(id));
+    assert.equal(source.gymId, null);
+    assert.equal(source.activity, null);
+    assert.equal(source.kind, "location");
+  });
+});
+
+test("unmapped locations retain fallback names without inferred activities", () => {
   const source = areaForLocation(123);
   assert.equal(source.id, "123");
   assert.equal(source.name, "Location 123");

@@ -58,7 +58,7 @@ export function TrendsScreen() {
             label="Source location"
             options={locations.rows.map((row) => ({
               value: String(row.LocationId),
-              label: `Location ${row.LocationId}`,
+              label: areaForLocation(row.LocationId).name,
             }))}
             value={locationId!}
             onChange={setSelectedId}
