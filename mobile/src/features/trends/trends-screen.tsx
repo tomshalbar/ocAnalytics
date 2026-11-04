@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { Screen } from "@/components/layout/screen";
 import { ScreenHeading } from "@/components/layout/screen-heading";
@@ -7,7 +7,8 @@ import { ChoiceGroup } from "@/components/ui/choice-group";
 import { EmptyState } from "@/components/ui/empty-state";
 import { areaForLocation, toAreaStatistics } from "@/data/adapters/locations";
 import { useLocations } from "@/data/api/use-locations";
-import { useLocationStatistics } from "@/data/api/use-location-statistics";
+import { getLocationStatistics } from "@/data/api/locations";
+import { useApiResource } from "@/data/api/use-api-resource";
 import { RequestState } from "@/features/areas/request-state";
 import { StatisticsCard } from "@/features/areas/statistics-card";
 
@@ -19,30 +20,59 @@ const rangeOptions = [
 
 export function TrendsScreen() {
   const locations = useLocations();
-  const [selectedId, setSelectedId] = useState<string>();
+  const [selectedFacilityId, setSelectedFacilityId] = useState<string>();
   const [days, setDays] = useState("7");
-  const locationId = locations.rows.some(
-    (row) => String(row.LocationId) === selectedId,
+  const [rangeRevision, setRangeRevision] = useState(0);
+  const facilityOptions = Array.from(
+    new Set(locations.rows.map((row) => String(row.FacilityId ?? "unknown"))),
+    (id) => ({ value: id, label: id === "unknown" ? "Not provided" : id }),
+  );
+  const facilityId = facilityOptions.some(
+    (option) => option.value === selectedFacilityId,
   )
-    ? selectedId
-    : locations.rows[0]
-      ? String(locations.rows[0].LocationId)
-      : undefined;
+    ? selectedFacilityId
+    : facilityOptions[0]?.value;
+  const locationIds = useMemo(
+    () =>
+      locations.rows
+        .filter((row) => String(row.FacilityId ?? "unknown") === facilityId)
+        .map((row) => String(row.LocationId)),
+    [locations.rows, facilityId],
+  );
   const range = useMemo(() => {
-    void locationId;
+    void facilityId;
+    void rangeRevision;
     const end = new Date();
     return {
       start: new Date(end.getTime() - Number(days) * 86400000).toISOString(),
       end: end.toISOString(),
     };
-  }, [locationId, days]);
-  const statistics = useLocationStatistics(locationId, range);
-  const area = locationId ? areaForLocation(Number(locationId)) : undefined;
-  const summary =
-    area && statistics.data && toAreaStatistics(area, statistics.data);
+  }, [facilityId, days, rangeRevision]);
+  const loadStatistics = useCallback(
+    (signal: AbortSignal) =>
+      Promise.all(
+        locationIds.map((id) => getLocationStatistics(id, range, signal)),
+      ),
+    [locationIds, range],
+  );
+  const statistics = useApiResource(
+    locationIds.length > 0 ? loadStatistics : null,
+  );
+  const summaries = (statistics.data ?? []).flatMap((response) => {
+    if (!response) return [];
+    const area = areaForLocation(response.location_id);
+    const summary = toAreaStatistics(area, response);
+    return summary ? [{ area, summary }] : [];
+  });
 
   return (
-    <Screen>
+    <Screen
+      refreshing={locations.loading || statistics.loading}
+      onRefresh={() => {
+        locations.refresh();
+        setRangeRevision((value) => value + 1);
+      }}
+    >
       <ScreenHeading
         title="Historical readings"
         subtitle="Compare last reported counts over a date range."
@@ -51,17 +81,16 @@ export function TrendsScreen() {
         loading={locations.loading}
         error={locations.error}
         refresh={locations.refresh}
+        showRefresh={false}
+        variant="inline"
       />
       <Section title="Choose a source location">
         {locations.rows.length > 0 && (
           <ChoiceGroup
-            label="Source location"
-            options={locations.rows.map((row) => ({
-              value: String(row.LocationId),
-              label: areaForLocation(row.LocationId).name,
-            }))}
-            value={locationId!}
-            onChange={setSelectedId}
+            label="Source facility"
+            options={facilityOptions}
+            value={facilityId!}
+            onChange={setSelectedFacilityId}
           />
         )}
         {!locations.loading &&
@@ -81,22 +110,32 @@ export function TrendsScreen() {
           onChange={setDays}
         />
       </Section>
-      {locationId && (
+      {facilityId && (
         <Section title="Snapshot summary">
-          <RequestState
-            loading={statistics.loading}
-            error={statistics.error}
-            refresh={statistics.refresh}
-          />
-          {summary && (
-            <StatisticsCard title={area!.name} statistics={summary} />
-          )}
-          {!statistics.loading && !statistics.error && !summary && (
-            <EmptyState
-              title="No valid summary readings"
-              description="There are no reported-open snapshots with a LastCount in this date range."
+          {(statistics.loading || statistics.error) && (
+            <RequestState
+              loading={statistics.loading}
+              error={statistics.error}
+              refresh={statistics.refresh}
+              showRefresh={false}
+              variant="inline"
             />
           )}
+          {summaries.map(({ area, summary }) => (
+            <StatisticsCard
+              key={area.id}
+              title={area.name}
+              statistics={summary}
+            />
+          ))}
+          {!statistics.loading &&
+            !statistics.error &&
+            summaries.length === 0 && (
+              <EmptyState
+                title="No valid summary readings"
+                description="There are no reported-open snapshots with a LastCount in this date range."
+              />
+            )}
         </Section>
       )}
       <Section title="Insights">

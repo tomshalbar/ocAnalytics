@@ -50,10 +50,16 @@ export function AreaDetailsScreen({ areaId }: { areaId: string }) {
   const area = areaForLocation(Number(areaId));
   const observation = latest.rows[0] && toAreaObservation(area, latest.rows[0]);
   const summary = statistics.data && toAreaStatistics(area, statistics.data);
+  const refreshing = latest.loading || statistics.loading || history.loading;
+  const refresh = () => {
+    latest.refresh();
+    setOffset(0);
+    setRangeRevision((value) => value + 1);
+  };
 
   if (latest.notFound || !/^\d+$/.test(areaId))
     return (
-      <Screen headerShown>
+      <Screen headerShown refreshing={refreshing} onRefresh={refresh}>
         <EmptyState
           title="Location not found"
           description="No latest reading exists for this source location."
@@ -65,7 +71,7 @@ export function AreaDetailsScreen({ areaId }: { areaId: string }) {
     );
 
   return (
-    <Screen headerShown>
+    <Screen headerShown refreshing={refreshing} onRefresh={refresh}>
       <ScreenHeading
         title={area.name}
         subtitle="Latest source reading and the past 24 hours of collected snapshots."
