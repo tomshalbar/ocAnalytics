@@ -1,16 +1,23 @@
 import type { PropsWithChildren } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { maxContentWidth, spacing } from "@/theme/tokens";
 import { useAppTheme } from "@/theme/use-app-theme";
 
-type Props = PropsWithChildren<{ headerShown?: boolean; standalone?: boolean }>;
+type Props = PropsWithChildren<{
+  headerShown?: boolean;
+  standalone?: boolean;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+}>;
 
 export function Screen({
   children,
   headerShown = false,
   standalone = false,
+  refreshing = false,
+  onRefresh,
 }: Props) {
   const { colors } = useAppTheme();
   // Navigator headers and the non-overlay tab bar own their respective insets.
@@ -28,6 +35,12 @@ export function Screen({
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        alwaysBounceVertical={!!onRefresh}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          ) : undefined
+        }
       >
         {children}
       </ScrollView>

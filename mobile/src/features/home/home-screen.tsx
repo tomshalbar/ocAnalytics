@@ -10,13 +10,18 @@ import { AreaCard } from "./components/area-card";
 export function HomeScreen() {
   const { rows, loading, error, refresh } = useLocations();
   return (
-    <Screen>
+    <Screen refreshing={loading} onRefresh={refresh}>
       <ScreenHeading
         eyebrow="OPEN COURT ANALYTICS"
         title="Latest activity"
         subtitle="Reported readings from RecSports. Locations are labeled by source ID until names are verified."
       />
-      <RequestState loading={loading} error={error} refresh={refresh} />
+      <RequestState
+        loading={loading}
+        error={error}
+        refresh={refresh}
+        showRefresh={false}
+      />
       <Section
         title="Latest readings"
         description="Latest collected snapshot per source location; check each reading’s freshness."

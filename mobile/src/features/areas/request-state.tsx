@@ -6,10 +6,12 @@ export function RequestState({
   loading,
   error,
   refresh,
+  showRefresh = true,
 }: {
   loading: boolean;
   error: string | null;
   refresh: () => void;
+  showRefresh?: boolean;
 }) {
   return (
     <Card>
@@ -19,11 +21,13 @@ export function RequestState({
       <AppText accessibilityLiveRegion="polite">
         {loading ? "Loading backend data…" : (error ?? "Backend data loaded")}
       </AppText>
-      <Button
-        title={error ? "Retry" : "Refresh"}
-        onPress={refresh}
-        disabled={loading}
-      />
+      {(showRefresh || error) && (
+        <Button
+          title={error ? "Retry" : "Refresh"}
+          onPress={refresh}
+          disabled={loading}
+        />
+      )}
     </Card>
   );
 }
