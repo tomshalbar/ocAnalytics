@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Screen } from "@/components/layout/screen";
 import { ScreenHeading } from "@/components/layout/screen-heading";
@@ -13,6 +13,14 @@ import { AreaCard } from "./components/area-card";
 
 export function HomeScreen() {
   const { rows, loading, error, refresh } = useLocations();
+  const statisticsRange = useMemo(() => {
+    void rows;
+    const end = new Date();
+    return {
+      start: new Date(end.getTime() - 86400000).toISOString(),
+      end: end.toISOString(),
+    };
+  }, [rows]);
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>();
   const facilityOptions = Array.from(
     new Set(rows.map((row) => facilityFilterId(row.FacilityId))),
@@ -68,6 +76,7 @@ export function HomeScreen() {
               key={area.id}
               area={area}
               observation={toAreaObservation(area, reading)}
+              statisticsRange={statisticsRange}
             />
           );
         })}
