@@ -1,5 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
-import { Button } from "react-native";
+import { useCallback } from "react";
 import { Link } from "expo-router";
 
 import { Screen } from "@/components/layout/screen";
@@ -8,54 +7,38 @@ import { Section } from "@/components/layout/section";
 import { AppText } from "@/components/ui/app-text";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  areaForLocation,
-  toAreaObservation,
-  toAreaStatistics,
-} from "@/data/adapters/locations";
+import { areaForLocation, toAreaObservation } from "@/data/adapters/locations";
 import { getLocationHistory, isVisibleLocation } from "@/data/api/locations";
 import { useApiResource } from "@/data/api/use-api-resource";
 import { useLocations } from "@/data/api/use-locations";
 import { useLocationStatistics } from "@/data/api/use-location-statistics";
+import { recentRange } from "@/data/api/recent-range";
 import { ObservationDetails } from "@/features/areas/observation-details";
-import { StatisticsCard } from "@/features/areas/statistics-card";
 import { RequestState } from "@/features/areas/request-state";
 import { ReadingHistoryChart } from "./reading-history/reading-history-chart";
 
 const PAGE_SIZE = 50;
 
 export function AreaDetailsScreen({ areaId }: { areaId: string }) {
-  const [offset, setOffset] = useState(0);
-  const [rangeRevision, setRangeRevision] = useState(0);
-  const range = useMemo(() => {
-    void areaId;
-    void rangeRevision;
-    const end = new Date();
-    return {
-      start: new Date(end.getTime() - 86400000).toISOString(),
-      end: end.toISOString(),
-    };
-  }, [areaId, rangeRevision]);
   const latest = useLocations(areaId);
-  const statistics = useLocationStatistics(areaId, range);
+  const statistics = useLocationStatistics(areaId, 1);
   const loadHistory = useCallback(
     (signal: AbortSignal) =>
       getLocationHistory(
         areaId,
-        { ...range, limit: PAGE_SIZE, offset },
+        { ...recentRange(1), limit: PAGE_SIZE, offset: 0 },
         signal,
       ),
-    [areaId, range, offset],
+    [areaId],
   );
-  const history = useApiResource(loadHistory);
+  const history = useApiResource(loadHistory, `history:${areaId}:days:1`);
   const area = areaForLocation(Number(areaId));
   const observation = latest.rows[0] && toAreaObservation(area, latest.rows[0]);
-  const summary = statistics.data && toAreaStatistics(area, statistics.data);
   const refreshing = latest.loading || statistics.loading || history.loading;
   const refresh = () => {
     latest.refresh();
-    setOffset(0);
-    setRangeRevision((value) => value + 1);
+    statistics.refresh();
+    history.refresh();
   };
 
   if (

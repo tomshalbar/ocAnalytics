@@ -5,7 +5,6 @@ import { AppIcon } from "@/components/ui/app-icon";
 import { AppText } from "@/components/ui/app-text";
 import { Card } from "@/components/ui/card";
 import { CrowdBadge } from "@/components/ui/crowd-badge";
-import type { LocationTimeRange } from "@/data/api/location-contracts";
 import { useLocationStatistics } from "@/data/api/use-location-statistics";
 import type { Area, AreaObservation } from "@/domain/area";
 import { activityIcons } from "@/features/areas/activity-options";
@@ -18,13 +17,12 @@ import { spacing } from "@/theme/tokens";
 type Props = {
   area: Area;
   observation?: AreaObservation;
-  statisticsRange: LocationTimeRange;
 };
 
-export function AreaCard({ area, observation, statisticsRange }: Props) {
+export function AreaCard({ area, observation }: Props) {
   const statistics = useLocationStatistics(
     area.sourceLocationId === null ? undefined : String(area.sourceLocationId),
-    statisticsRange,
+    1,
   );
   const count = observation?.lastReportedCount;
   const average = statistics.data?.statistics.average_count;

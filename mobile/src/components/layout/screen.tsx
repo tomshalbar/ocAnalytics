@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useBackendConnection } from "@/data/api/backend-connection";
+import { refreshAllResources } from "@/data/api/resource-cache";
 import { maxContentWidth, spacing } from "@/theme/tokens";
 import { useAppTheme } from "@/theme/use-app-theme";
 
@@ -22,7 +23,10 @@ export function Screen({
 }: Props) {
   const { colors } = useAppTheme();
   const connection = useBackendConnection();
-  const handleRefresh = onRefresh ?? connection.retry;
+  const handleRefresh = () => {
+    refreshAllResources();
+    (onRefresh ?? connection.retry)();
+  };
   const isRefreshing = refreshing ?? connection.status === "checking";
   // Navigator headers and the non-overlay tab bar own their respective insets.
   return (

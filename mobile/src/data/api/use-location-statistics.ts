@@ -1,15 +1,19 @@
 import { useCallback } from "react";
-import type { LocationTimeRange } from "./location-contracts";
 import { getLocationStatistics } from "./locations";
+import { recentRange } from "./recent-range";
 import { useApiResource } from "./use-api-resource";
 
 export function useLocationStatistics(
   locationId: string | undefined,
-  range: LocationTimeRange,
+  days: number,
 ) {
   const load = useCallback(
-    (signal: AbortSignal) => getLocationStatistics(locationId!, range, signal),
-    [locationId, range],
+    (signal: AbortSignal) =>
+      getLocationStatistics(locationId!, recentRange(days), signal),
+    [locationId, days],
   );
-  return useApiResource(locationId === undefined ? null : load);
+  return useApiResource(
+    locationId === undefined ? null : load,
+    `statistics:${locationId}:days:${days}`,
+  );
 }

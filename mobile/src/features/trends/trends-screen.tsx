@@ -9,6 +9,7 @@ import { areaForLocation, toAreaStatistics } from "@/data/adapters/locations";
 import { useLocations } from "@/data/api/use-locations";
 import { getLocationStatistics } from "@/data/api/locations";
 import { useApiResource } from "@/data/api/use-api-resource";
+import { recentRange } from "@/data/api/recent-range";
 import { facilityFilterId } from "@/data/reference/source-facilities";
 import { RequestState } from "@/features/areas/request-state";
 import { StatisticsCard } from "@/features/areas/statistics-card";
@@ -23,28 +24,22 @@ export function TrendsScreen() {
   const locations = useLocations();
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>();
   const [days, setDays] = useState("7");
-  const [rangeRevision, setRangeRevision] = useState(0);
   const locationIds = useMemo(
     () => locations.rows.map((row) => String(row.LocationId)),
     [locations.rows],
   );
-  const range = useMemo(() => {
-    void rangeRevision;
-    const end = new Date();
-    return {
-      start: new Date(end.getTime() - Number(days) * 86400000).toISOString(),
-      end: end.toISOString(),
-    };
-  }, [days, rangeRevision]);
   const loadStatistics = useCallback(
-    (signal: AbortSignal) =>
-      Promise.all(
+    (signal: AbortSignal) => {
+      const range = recentRange(Number(days));
+      return Promise.all(
         locationIds.map((id) => getLocationStatistics(id, range, signal)),
-      ),
-    [locationIds, range],
+      );
+    },
+    [locationIds, days],
   );
   const statistics = useApiResource(
     locationIds.length > 0 ? loadStatistics : null,
+    `trends:${locationIds.join(",")}:days:${days}`,
   );
   const allSummaries = (statistics.data ?? []).flatMap((response) => {
     if (!response || response.statistics.total_readings === 0) return [];
@@ -76,7 +71,7 @@ export function TrendsScreen() {
       refreshing={locations.loading || statistics.loading}
       onRefresh={() => {
         locations.refresh();
-        setRangeRevision((value) => value + 1);
+        statistics.refresh();
       }}
     >
       <ScreenHeading
