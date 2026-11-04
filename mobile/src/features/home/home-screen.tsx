@@ -13,14 +13,15 @@ export function HomeScreen() {
     <Screen refreshing={loading} onRefresh={refresh}>
       <ScreenHeading
         eyebrow="OPEN COURT ANALYTICS"
-        title="Latest activity"
-        subtitle="Reported readings from RecSports. Locations are labeled by source ID until names are verified."
+        title="Find your open court."
+        subtitle="A little insight. A better time at the gym."
       />
       <RequestState
         loading={loading}
         error={error}
         refresh={refresh}
         showRefresh={false}
+        variant="inline"
       />
       <Section
         title="Latest readings"

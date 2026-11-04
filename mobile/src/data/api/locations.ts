@@ -1,3 +1,4 @@
+import { lastUpdatedLabel } from "@/domain/readings/last-updated-label";
 import type {
   LocationReading,
   LocationStatisticsResponse,
@@ -249,7 +250,7 @@ export async function getLocationStatistics(
 
 export function readingStatus(row: LocationReading) {
   if (row.is_stale || row.collection_is_stale)
-    return "Outdated reading · current status unconfirmed";
+    return lastUpdatedLabel(row.LastUpdatedDateAndTime);
   if (row.IsClosed === true) return "Reported closed";
   if (row.IsClosed === false) return "Reported open";
   return "Opening status unknown";

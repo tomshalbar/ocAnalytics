@@ -1,4 +1,5 @@
 import type { AreaObservation } from "@/domain/area";
+import { lastUpdatedLabel } from "@/domain/readings/last-updated-label";
 
 export function availabilityLabel(observation?: AreaObservation) {
   if (!observation) return "No reading available";
@@ -8,7 +9,7 @@ export function availabilityLabel(observation?: AreaObservation) {
 export function observationStatus(observation?: AreaObservation) {
   if (!observation) return "Opening status unknown";
   if (observation.sourceIsStale || observation.collectionIsStale)
-    return "Outdated reading · current status unconfirmed";
+    return lastUpdatedLabel(observation.sourceUpdatedAt);
   if (observation.isClosed === true) return "Reported closed";
   if (observation.isClosed === false) return "Reported open";
   return "Opening status unknown";
