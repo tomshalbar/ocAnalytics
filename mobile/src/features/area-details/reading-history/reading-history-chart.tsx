@@ -30,7 +30,7 @@ export function ReadingHistoryChart({
 
   return (
     <Card>
-      <AppText variant="label">Last reported count</AppText>
+      <AppText variant="label">Live Counts From the Past 24 Hours</AppText>
       <View style={styles.chart}>
         <View style={styles.axis}>
           {chart.ticks.map((tick) => (
