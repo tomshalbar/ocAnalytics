@@ -8,6 +8,9 @@ services:
     healthCheckPath: /
     autoDeployTrigger: "off"
     envVars:
+      # Keep large-model downloads/inference off this free API instance.
+      - key: FORECAST_ENABLED
+        value: "false"
       - key: PYTHON_VERSION
         value: 3.13.9
       - key: DATABASE_URL

@@ -1,5 +1,13 @@
 """Settings for the occupancy forecast service."""
 
+import os
+
+
+def forecast_enabled() -> bool:
+    # Existing local behavior is preserved; Render Free explicitly disables it.
+    return os.getenv("FORECAST_ENABLED", "true").lower() == "true"
+
+
 # Hours before this one are treated as closed: filled with 0 in the data
 # and forced to 0 in every forecast.
 CLOSED_BEFORE_HOUR = 5
