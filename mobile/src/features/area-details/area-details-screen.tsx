@@ -20,6 +20,7 @@ import { useLocationStatistics } from "@/data/api/use-location-statistics";
 import { ObservationDetails } from "@/features/areas/observation-details";
 import { StatisticsCard } from "@/features/areas/statistics-card";
 import { RequestState } from "@/features/areas/request-state";
+import { ReadingHistoryChart } from "./reading-history/reading-history-chart";
 
 const PAGE_SIZE = 50;
 
@@ -128,21 +129,16 @@ export function AreaDetailsScreen({ areaId }: { areaId: string }) {
       </Section>
       <Section
         title="Reading history"
-        description="Collection-time order, oldest first. Each page contains up to 50 snapshots."
+        description="Last reported count for each snapshot, oldest first. Month abbreviations are shown once per month. Each page contains up to 50 snapshots."
       >
         <RequestState
           loading={history.loading}
           error={history.error}
           refresh={history.refresh}
         />
-        {history.data?.map((reading) => {
-          const item = toAreaObservation(area, reading);
-          return item ? (
-            <Card key={item.readingId}>
-              <ObservationDetails observation={item} />
-            </Card>
-          ) : null;
-        })}
+        {!!history.data?.length && (
+          <ReadingHistoryChart readings={history.data} />
+        )}
         {!history.loading && !history.error && history.data?.length === 0 && (
           <EmptyState
             title="No readings in this page"
