@@ -1,4 +1,5 @@
 """Read-only occupancy endpoints over raw data, pending metadata completion."""
+
 from datetime import datetime, timedelta, timezone
 import logging
 import os
@@ -9,6 +10,9 @@ import psycopg
 
 from backend.api.schemas import Observation, StatisticsResponse
 from backend.db.database import get_db_connection
+from backend.services.forecasting import services as forecasting
+from backend.services.forecasting.config import MAX_HOURS, MODEL_BY_LOCATION
+from backend.api.schemas import Observation, Forecast
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -59,50 +63,78 @@ def time_range(start, end):
     if end - start > timedelta(days=31):
         raise HTTPException(400, "Date range must not exceed 31 days")
     # runDatetime is a legacy timestamp WITHOUT time zone.
-    return tuple(value.astimezone(LEGACY_TIMEZONE).replace(tzinfo=None)
-                 for value in (start, end))
+    return tuple(
+        value.astimezone(LEGACY_TIMEZONE).replace(tzinfo=None) for value in (start, end)
+    )
 
 
 @router.get("/locations/latest", response_model=list[Observation])
 def get_latest_locations():
-    rows = query(f'''SELECT DISTINCT ON ("LocationId") {COLUMNS}
+    rows = query(
+        f"""SELECT DISTINCT ON ("LocationId") {COLUMNS}
         FROM raw_recsports_data
-        ORDER BY "LocationId", "runDatetime" DESC, id DESC''', many=True)
+        ORDER BY "LocationId", "runDatetime" DESC, id DESC""",
+        many=True,
+    )
     return [observation(row) for row in rows]
 
 
 @router.get("/locations/{location_id}/latest", response_model=Observation)
 def get_latest_location(location_id: int):
-    row = query(f'''SELECT {COLUMNS} FROM raw_recsports_data
+    row = query(
+        f"""SELECT {COLUMNS} FROM raw_recsports_data
         WHERE "LocationId" = %s
-        ORDER BY "runDatetime" DESC, id DESC LIMIT 1''', (location_id,))
+        ORDER BY "runDatetime" DESC, id DESC LIMIT 1""",
+        (location_id,),
+    )
     if row is None:
         raise HTTPException(404, "Location not found")
     return observation(row)
 
 
 @router.get("/locations/{location_id}/history", response_model=list[Observation])
-def get_location_history(location_id: int, start: datetime, end: datetime,
-                         limit: int = Query(100, ge=1, le=1000),
-                         offset: int = Query(0, ge=0, le=100000)):
+def get_location_history(
+    location_id: int,
+    start: datetime,
+    end: datetime,
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0, le=100000),
+):
     bounds = time_range(start, end)
-    rows = query(f'''SELECT {COLUMNS} FROM raw_recsports_data
+    rows = query(
+        f"""SELECT {COLUMNS} FROM raw_recsports_data
         WHERE "LocationId" = %s AND "runDatetime" >= %s AND "runDatetime" < %s
-        ORDER BY "runDatetime" ASC, id ASC LIMIT %s OFFSET %s''',
-        (location_id, *bounds, limit, offset), many=True)
+        ORDER BY "runDatetime" ASC, id ASC LIMIT %s OFFSET %s""",
+        (location_id, *bounds, limit, offset),
+        many=True,
+    )
     return [observation(row) for row in rows]
 
 
 @router.get("/locations/{location_id}/stats", response_model=StatisticsResponse)
 def get_location_stats(location_id: int, start: datetime, end: datetime):
     bounds = time_range(start, end)
-    stats = query('''SELECT COUNT(*) AS total_readings,
+    stats = query(
+        """SELECT COUNT(*) AS total_readings,
         ROUND(AVG("LastCount"), 2) AS average_count,
         MIN("LastCount") AS minimum_count, MAX("LastCount") AS maximum_count
         FROM raw_recsports_data
         WHERE "LocationId" = %s AND "runDatetime" >= %s AND "runDatetime" < %s
-        AND "IsClosed" = false AND "LastCount" IS NOT NULL''',
-        (location_id, *bounds))
+        AND "IsClosed" = false AND "LastCount" IS NOT NULL""",
+        (location_id, *bounds),
+    )
     if stats["total_readings"] == 0:
-        raise HTTPException(404, "No occupancy data found for this location and date range")
+        raise HTTPException(
+            404, "No occupancy data found for this location and date range"
+        )
     return dict(location_id=location_id, start=start, end=end, statistics=stats)
+
+
+@router.get("/locations/{location_id}/forecast", response_model=Forecast)
+def get_location_forecast(location_id: int, hours: int = Query(24, ge=1, le=MAX_HOURS)):
+    if location_id not in MODEL_BY_LOCATION:
+        raise HTTPException(404, "No forecast model for this location")
+    try:
+        return forecasting.get_forecast(location_id, hours)
+    except LookupError:  # raised by the service when there are no readings
+        raise HTTPException(404, "No recent readings for this location")
