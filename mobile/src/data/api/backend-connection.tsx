@@ -6,8 +6,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { AppState } from "react-native";
 
 import { checkBackendConnection, getRequestTimeoutMs } from "./locations";
+import { refreshDueResources } from "./resource-cache";
 
 type ConnectionState =
   | { status: "checking"; error: null }
@@ -30,6 +32,13 @@ export function BackendConnectionProvider({
   const retry = useCallback(() => {
     setState({ status: "checking", error: null });
     setRevision((value) => value + 1);
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (status) => {
+      if (status === "active") refreshDueResources();
+    });
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {

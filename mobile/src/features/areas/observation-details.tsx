@@ -38,10 +38,6 @@ export function ObservationDetails({
         Collection freshness:{" "}
         {observation.collectionIsStale ? "Outdated" : "Within freshness window"}
       </AppText>
-      <AppText variant="caption" tone="muted">
-        Counts do not indicate available courts. Capacity percentage is shown as
-        reported; its scale is not yet verified.
-      </AppText>
     </>
   );
 }

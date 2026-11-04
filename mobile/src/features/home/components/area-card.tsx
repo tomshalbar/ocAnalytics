@@ -4,6 +4,8 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { AppIcon } from "@/components/ui/app-icon";
 import { AppText } from "@/components/ui/app-text";
 import { Card } from "@/components/ui/card";
+import { CrowdBadge } from "@/components/ui/crowd-badge";
+import { useLocationStatistics } from "@/data/api/use-location-statistics";
 import type { Area, AreaObservation } from "@/domain/area";
 import { activityIcons } from "@/features/areas/activity-options";
 import {
@@ -12,9 +14,27 @@ import {
 } from "@/features/areas/availability-label";
 import { spacing } from "@/theme/tokens";
 
-type Props = { area: Area; observation?: AreaObservation };
+type Props = {
+  area: Area;
+  observation?: AreaObservation;
+};
 
 export function AreaCard({ area, observation }: Props) {
+  const statistics = useLocationStatistics(
+    area.sourceLocationId === null ? undefined : String(area.sourceLocationId),
+    1,
+  );
+  const count = observation?.lastReportedCount;
+  const average = statistics.data?.statistics.average_count;
+  const crowdLevel =
+    count == null || average == null
+      ? undefined
+      : Math.abs(count - average) <= 2
+        ? "moderate"
+        : count > average
+          ? "busy"
+          : "quiet";
+
   return (
     <Link
       href={{ pathname: "/areas/[areaId]", params: { areaId: area.id } }}
@@ -22,7 +42,7 @@ export function AreaCard({ area, observation }: Props) {
     >
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={`${area.name}, ${observationStatus(observation)}, ${availabilityLabel(observation)}`}
+        accessibilityLabel={`${area.name}, ${observationStatus(observation)}, ${availabilityLabel(observation)}${crowdLevel ? `, ${crowdLevel}` : ""}`}
         accessibilityHint="Open area readings and history"
         style={({ pressed }) => pressed && styles.pressed}
       >
@@ -42,9 +62,7 @@ export function AreaCard({ area, observation }: Props) {
           </View>
           <AppText>{observationStatus(observation)}</AppText>
           <AppText tone="muted">{availabilityLabel(observation)}</AppText>
-          <AppText variant="caption" tone="muted">
-            Source facility: {observation?.sourceFacilityId ?? "Not provided"}
-          </AppText>
+          {crowdLevel && <CrowdBadge level={crowdLevel} />}
         </Card>
       </Pressable>
     </Link>
