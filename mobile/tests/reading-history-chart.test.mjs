@@ -53,7 +53,7 @@ test("count axis starts at zero and covers the largest reported value", () => {
   assert.deepEqual(buildReadingChart([]).months, []);
 });
 
-test("combines adjacent equal counts on the same calendar date", () => {
+test("keeps adjacent equal counts on the same calendar date as separate bars", () => {
   const first = snapshot(1, 12, 2026, 11, 5);
   const second = {
     ...snapshot(2, 12, 2026, 11, 5),
@@ -66,22 +66,29 @@ test("combines adjacent equal counts on the same calendar date", () => {
   const chart = buildReadingChart([third, first, second]);
   assert.deepEqual(chart.months[0].bars, [
     { id: first.id, count: 12, collectedAt: first.runDatetime },
+    { id: second.id, count: 12, collectedAt: second.runDatetime },
+    { id: third.id, count: 12, collectedAt: third.runDatetime },
   ]);
   assert.equal(chart.omittedCount, 0);
 });
 
-test("keeps matching counts separate across dates or intervening readings", () => {
-  const chart = buildReadingChart([
-    snapshot(1, 12, 2026, 11, 5),
-    snapshot(2, 8, 2026, 11, 5),
-    snapshot(3, 12, 2026, 11, 5),
-    snapshot(4, 12, 2026, 11, 6),
-    snapshot(5, null, 2026, 11, 6),
-    snapshot(6, 12, 2026, 11, 6),
-  ]);
+test("uses the latest valid reading per hour and preserves separate dates", () => {
+  const earlier = snapshot(1, 100, 2026, 11, 5);
+  const later = {
+    ...snapshot(2, 8, 2026, 11, 5),
+    runDatetime: new Date(2026, 10, 5, 12, 45).toISOString(),
+  };
+  const invalid = {
+    ...snapshot(3, null, 2026, 11, 5),
+    runDatetime: new Date(2026, 10, 5, 12, 59).toISOString(),
+  };
+  const nextDay = snapshot(4, 8, 2026, 11, 6);
+  const chart = buildReadingChart([nextDay, invalid, later, earlier]);
   assert.deepEqual(
     chart.months[0].bars.map((bar) => bar.id),
-    [1, 2, 3, 4, 6],
+    [2, 4],
   );
+  assert.equal(chart.months[0].bars[0].collectedAt, later.runDatetime);
+  assert.ok(chart.maximum < 100);
   assert.equal(chart.omittedCount, 1);
 });

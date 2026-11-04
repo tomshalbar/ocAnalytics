@@ -5,9 +5,9 @@ export type ReadingMonth = { key: string; month: number; bars: ReadingBar[] };
 
 export function buildReadingChart(readings: readonly LocationReading[]) {
   const months = new Map<string, ReadingMonth>();
+  const hours = new Map<string, ReadingBar>();
   let maximum = 0;
   let plottedCount = 0;
-  let previous: { day: string; count: number } | undefined;
 
   const ordered = [...readings].sort(
     (a, b) => Date.parse(a.runDatetime) - Date.parse(b.runDatetime),
@@ -20,24 +20,26 @@ export function buildReadingChart(readings: readonly LocationReading[]) {
       !Number.isFinite(count) ||
       count < 0 ||
       !Number.isFinite(date.getTime())
-    ) {
-      previous = undefined;
+    )
       continue;
-    }
 
     const month = date.getMonth() + 1;
-    const key = `${date.getFullYear()}-${month}`;
-    const day = `${key}-${date.getDate()}`;
+    const hour = `${date.getFullYear()}-${month}-${date.getDate()}-${date.getHours()}`;
     plottedCount += 1;
-    if (previous?.day === day && previous.count === count) continue;
-    previous = { day, count };
-    if (!months.has(key)) months.set(key, { key, month, bars: [] });
-    months.get(key)!.bars.push({
+    hours.set(hour, {
       id: reading.id,
       count,
       collectedAt: reading.runDatetime,
     });
-    maximum = Math.max(maximum, count);
+  }
+
+  for (const bar of hours.values()) {
+    const date = new Date(bar.collectedAt);
+    const month = date.getMonth() + 1;
+    const key = `${date.getFullYear()}-${month}`;
+    if (!months.has(key)) months.set(key, { key, month, bars: [] });
+    months.get(key)!.bars.push(bar);
+    maximum = Math.max(maximum, bar.count);
   }
 
   // Four equal intervals with whole-number, readable count ticks.

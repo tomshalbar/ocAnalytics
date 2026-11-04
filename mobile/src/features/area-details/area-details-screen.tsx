@@ -129,7 +129,7 @@ export function AreaDetailsScreen({ areaId }: { areaId: string }) {
       </Section>
       <Section
         title="Reading history"
-        description="Last reported counts, oldest first. Consecutive snapshots with the same date and count are combined. Months are labeled once. Each page contains up to 50 snapshots."
+        description="Latest valid last reported count per hour, oldest first. Months are labeled once. Each page contains up to 50 snapshots."
       >
         <RequestState
           loading={history.loading}
