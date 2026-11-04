@@ -140,6 +140,7 @@ export function TrendsScreen() {
               key={area.id}
               title={area.name}
               statistics={summary}
+              compactCounts
             />
           ))}
         </Section>
