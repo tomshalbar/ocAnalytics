@@ -17,9 +17,9 @@ export function RecommendationCard({
   return (
     <Card>
       <AppText variant="heading">
-        {recommendation.dayLabel} · {recommendation.timeLabel}
+        {recommendation.dayLabel}, {recommendation.timeLabel}
       </AppText>
-      <AppText variant="label">
+      <AppText variant="label" tone="muted">
         {areaName} · {gymName}
       </AppText>
       <CrowdBadge level={recommendation.expectedCrowd} />
