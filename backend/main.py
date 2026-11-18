@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from backend.api.routes import router
+from backend.api.health import router as health_router
 
 import logging
 from contextlib import asynccontextmanager
@@ -30,3 +31,4 @@ def root():
 
 
 app.include_router(router)
+app.include_router(health_router)
