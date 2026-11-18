@@ -11,6 +11,10 @@ services:
       # Keep large-model downloads/inference off this free API instance.
       - key: FORECAST_ENABLED
         value: "false"
+      # After uploading snapshots, set FORECAST_ENABLED=true in Render.
+      # database mode never loads the local inference model on this instance.
+      - key: FORECAST_BACKEND
+        value: "database"
       - key: PYTHON_VERSION
         value: 3.13.9
       - key: DATABASE_URL

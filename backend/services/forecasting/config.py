@@ -3,6 +3,11 @@
 import os
 
 
+def forecast_backend() -> str:
+    """database serves uploaded results without loading inference dependencies."""
+    return os.getenv("FORECAST_BACKEND", "model").lower()
+
+
 def forecast_enabled() -> bool:
     # Existing local behavior is preserved; Render Free explicitly disables it.
     return os.getenv("FORECAST_ENABLED", "true").lower() == "true"
