@@ -1,42 +1,42 @@
 import type { LocationReading } from "@/data/api/location-contracts";
+import { RECENT_READING_LIMIT } from "../../../data/api/location-contracts.ts";
+import {
+  createDateTimeFormatter,
+  getDeviceDateTimeSettings,
+} from "../../../time/date-time.ts";
 
 export type ReadingBar = { id: number; count: number; collectedAt: string };
 export type ReadingMonth = { key: string; month: number; bars: ReadingBar[] };
 
-export function buildReadingChart(readings: readonly LocationReading[]) {
+export function buildReadingChart(
+  readings: readonly LocationReading[],
+  dateTime = createDateTimeFormatter(getDeviceDateTimeSettings()),
+) {
   const months = new Map<string, ReadingMonth>();
-  const hours = new Map<string, ReadingBar>();
   let maximum = 0;
-  let plottedCount = 0;
+  let omittedCount = 0;
 
-  const ordered = [...readings].sort(
-    (a, b) => Date.parse(a.runDatetime) - Date.parse(b.runDatetime),
-  );
-  for (const reading of ordered) {
-    const count = reading.LastCount;
-    const date = new Date(reading.runDatetime);
-    if (
-      count === null ||
-      !Number.isFinite(count) ||
-      count < 0 ||
-      !Number.isFinite(date.getTime())
+  const recent = [...readings]
+    .sort(
+      (a, b) =>
+        Date.parse(b.runDatetime) - Date.parse(a.runDatetime) || b.id - a.id,
     )
+    .slice(0, RECENT_READING_LIMIT)
+    .reverse();
+  for (const reading of recent) {
+    const count = reading.LastCount;
+    const keys = dateTime.calendarKeys(reading.runDatetime);
+    if (count === null || !Number.isFinite(count) || count < 0 || !keys) {
+      omittedCount += 1;
       continue;
+    }
 
-    const month = date.getMonth() + 1;
-    const hour = `${date.getFullYear()}-${month}-${date.getDate()}-${date.getHours()}`;
-    plottedCount += 1;
-    hours.set(hour, {
+    const bar = {
       id: reading.id,
       count,
       collectedAt: reading.runDatetime,
-    });
-  }
-
-  for (const bar of hours.values()) {
-    const date = new Date(bar.collectedAt);
-    const month = date.getMonth() + 1;
-    const key = `${date.getFullYear()}-${month}`;
+    };
+    const { month, monthKey: key } = keys;
     if (!months.has(key)) months.set(key, { key, month, bars: [] });
     months.get(key)!.bars.push(bar);
     maximum = Math.max(maximum, bar.count);
@@ -53,6 +53,6 @@ export function buildReadingChart(readings: readonly LocationReading[]) {
     months: [...months.values()],
     ticks,
     maximum: ticks[0],
-    omittedCount: readings.length - plottedCount,
+    omittedCount,
   };
 }

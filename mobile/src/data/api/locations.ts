@@ -1,4 +1,6 @@
-import { lastUpdatedLabel } from "../../domain/readings/last-updated-label.ts";
+import { lastUpdatedLabel } from "@/domain/readings/last-updated-label";
+import { parseTimestamp } from "../../time/date-time.ts";
+import { RECENT_READING_LIMIT } from "./location-contracts.ts";
 import type {
   LocationReading,
   LocationStatisticsResponse,
@@ -67,7 +69,7 @@ function isReading(value: unknown): value is LocationReading {
   const nullableNumber = (v: unknown) =>
     v === null || (typeof v === "number" && Number.isFinite(v));
   const date = (v: unknown) =>
-    typeof v === "string" && Number.isFinite(Date.parse(v));
+    typeof v === "string" && Number.isFinite(parseTimestamp(v));
   return (
     Number.isInteger(row.id) &&
     Number.isInteger(row.LocationId) &&
@@ -183,6 +185,56 @@ export async function getLocationResource(
   }
 }
 
+export function recentReadingsCacheKey(locationId: string): string {
+  return `history:${locationId}:recent:limit:${RECENT_READING_LIMIT}`;
+}
+
+export async function getRecentLocationReadings(
+  locationId: string,
+  signal: AbortSignal,
+): Promise<LocationReading[]> {
+  const latest = await getLocations(locationId, signal);
+  if (!latest.length) return [];
+
+  const day = 86_400_000;
+  const pageSize = 1000;
+  // Anchor to the newest stored snapshot, even if the location is inactive.
+  // The history endpoint has an exclusive end and returns oldest-first pages.
+  let end = Date.parse(latest[0].runDatetime) + 1;
+  let windowDays = 1;
+  let recent: LocationReading[] = [];
+  while (end > 0 && recent.length < RECENT_READING_LIMIT) {
+    signal.throwIfAborted();
+    const start = Math.max(0, end - windowDays * day);
+    for (let offset = 0; ; offset += pageSize) {
+      signal.throwIfAborted();
+      const page = await getLocationHistory(
+        locationId,
+        {
+          start: new Date(start).toISOString(),
+          end: new Date(end).toISOString(),
+          limit: pageSize,
+          offset,
+        },
+        signal,
+      );
+      recent = [...recent, ...page]
+        .sort(
+          (a, b) =>
+            Date.parse(b.runDatetime) - Date.parse(a.runDatetime) ||
+            b.id - a.id,
+        )
+        .slice(0, RECENT_READING_LIMIT);
+      // Finish this window before selecting: later pages contain newer data.
+      if (page.length < pageSize) break;
+    }
+    end = start;
+    // Backfill sparse histories using disjoint windows within the API's 31-day cap.
+    windowDays = Math.min(31, windowDays * 2);
+  }
+  return recent;
+}
+
 export async function getLocationHistory(
   locationId: string,
   query: LocationHistoryQuery,
@@ -261,10 +313,6 @@ export function readingStatus(row: LocationReading) {
   if (row.IsClosed === true) return "Reported closed";
   if (row.IsClosed === false) return "Reported open";
   return "Opening status unknown";
-}
-
-export function formatReadingTime(value: string | null) {
-  return value ? new Date(value).toLocaleString() : "Not provided";
 }
 
 // Invalid or excessive configuration falls back to 15 seconds.

@@ -33,3 +33,4 @@ export type LocationHistoryQuery = LocationTimeRange & {
 };
 
 export type LocationHistoryResponse = LocationReading[];
+export const RECENT_READING_LIMIT = 24;

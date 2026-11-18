@@ -1,16 +1,14 @@
 import { AppText } from "@/components/ui/app-text";
 import type { AreaObservation } from "@/domain/area";
-import {
-  availabilityLabel,
-  observationStatus,
-  observationTime,
-} from "./availability-label";
+import { useDateTime } from "@/time/date-time-provider";
+import { availabilityLabel, observationStatus } from "./availability-label";
 
 export function ObservationDetails({
   observation,
 }: {
   observation: AreaObservation;
 }) {
+  const { formatDateTime } = useDateTime();
   return (
     <>
       <AppText>{observationStatus(observation)}</AppText>
@@ -23,10 +21,10 @@ export function ObservationDetails({
         {observation.reportedCapacityPercentage ?? "Not provided"}
       </AppText>
       <AppText variant="caption" tone="muted">
-        Source updated: {observationTime(observation.sourceUpdatedAt)}
+        Source updated: {formatDateTime(observation.sourceUpdatedAt)}
       </AppText>
       <AppText variant="caption" tone="muted">
-        Collected: {observationTime(observation.collectedAt)}
+        Collected: {formatDateTime(observation.collectedAt)}
       </AppText>
       <AppText variant="caption" tone="muted">
         Source freshness:{" "}
