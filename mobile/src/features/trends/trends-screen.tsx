@@ -12,6 +12,8 @@ import { useApiResource } from "@/data/api/use-api-resource";
 import { recentRange } from "@/data/api/recent-range";
 import { facilityFilterId } from "@/data/reference/source-facilities";
 import { RequestState } from "@/features/areas/request-state";
+import { useLocationForecast } from "@/data/api/use-location-forecast";
+import { ForecastCard } from "./forecast-card";
 import { StatisticsCard } from "@/features/areas/statistics-card";
 
 const rangeOptions = [
@@ -23,6 +25,7 @@ const rangeOptions = [
 export function TrendsScreen() {
   const locations = useLocations();
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>();
+  const [selectedForecastId, setSelectedForecastId] = useState<string>();
   const [days, setDays] = useState("7");
   const locationIds = useMemo(
     () => locations.rows.map((row) => String(row.LocationId)),
@@ -66,12 +69,28 @@ export function TrendsScreen() {
     (entry) => entry.facilityId === facilityId,
   );
 
+  const forecastOptions = locations.rows
+    .filter(
+      (row) => !facilityId || facilityFilterId(row.FacilityId) === facilityId,
+    )
+    .map((row) => ({
+      value: String(row.LocationId),
+      label: areaForLocation(row.LocationId).name,
+    }));
+  const forecastId = forecastOptions.some(
+    (option) => option.value === selectedForecastId,
+  )
+    ? selectedForecastId
+    : forecastOptions[0]?.value;
+  const forecast = useLocationForecast(forecastId);
+
   return (
     <Screen
-      refreshing={locations.loading || statistics.loading}
+      refreshing={locations.loading || statistics.loading || forecast.loading}
       onRefresh={() => {
         locations.refresh();
         statistics.refresh();
+        forecast.refresh();
       }}
     >
       <ScreenHeading
@@ -135,11 +154,33 @@ export function TrendsScreen() {
         </Section>
       )}
       <Section title="Insights">
-        <EmptyState
-          icon="bulb-outline"
-          title="Predictions are not yet available"
-          description="The API provides snapshot summaries, not hourly patterns or suggested visit times."
-        />
+        {forecastId ? (
+          <>
+            <ChoiceGroup
+              label="Prediction location"
+              options={forecastOptions}
+              value={forecastId}
+              onChange={setSelectedForecastId}
+            />
+            <RequestState
+              loading={forecast.loading}
+              error={forecast.error}
+              refresh={forecast.refresh}
+            />
+            {forecast.data && !forecast.error && (
+              <ForecastCard
+                forecast={forecast.data}
+                title={`${areaForLocation(Number(forecastId)).name} · Next 24 hours`}
+              />
+            )}
+          </>
+        ) : (
+          <EmptyState
+            icon="bulb-outline"
+            title="No prediction location available"
+            description="Load source locations to view occupancy predictions."
+          />
+        )}
       </Section>
     </Screen>
   );

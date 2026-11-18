@@ -122,7 +122,7 @@ test("outdated source or collection cannot imply current opening status", () => 
             ...freshness,
           }),
         ),
-        /current status unconfirmed/,
+        /Last updated/,
       );
     }
   }
