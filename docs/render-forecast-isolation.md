@@ -33,3 +33,8 @@ python -m unittest discover -s backend/tests -v
 The added HTTP tests cover all four existing data endpoints when forecasting is
 disabled and after a simulated preload failure. Database calls and model loading
 are mocked; no live database data is changed. Real model inference is not tested.
+# Precomputed forecasts
+
+To run the model on a local computer and serve its stored results from Render,
+follow [local forecast publishing](local-forecast-publishing.md). Database mode
+skips model preload/inference while keeping the existing forecast response shape.
