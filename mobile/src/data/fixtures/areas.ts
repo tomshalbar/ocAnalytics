@@ -1,4 +1,6 @@
 import type { Area, AreaObservation } from "@/domain/area";
+import type { LocationReading } from "../api/location-contracts";
+import { toAreaObservation } from "../adapters/locations";
 
 export const demoAreas: readonly Area[] = [
   {
@@ -7,6 +9,7 @@ export const demoAreas: readonly Area[] = [
     name: "Pickleball",
     kind: "court",
     activity: "pickleball",
+    sourceLocationId: null,
   },
   {
     id: "southwest-tennis",
@@ -14,6 +17,7 @@ export const demoAreas: readonly Area[] = [
     name: "Tennis",
     kind: "court",
     activity: "tennis",
+    sourceLocationId: null,
   },
   {
     id: "southwest-weights",
@@ -21,33 +25,59 @@ export const demoAreas: readonly Area[] = [
     name: "Weight room",
     kind: "room",
     activity: "weight-training",
+    sourceLocationId: null,
   },
 ];
 
-// Fixed observations for layout previews; never presented as live readings.
-export const demoObservations: readonly AreaObservation[] = [
+// Synthetic IDs and readings for layout previews, NOT verified source mappings.
+// The real area catalog above intentionally keeps sourceLocationId null.
+export const demoReadings: readonly LocationReading[] = [
   {
-    areaId: "southwest-pickleball",
-    crowdLevel: "quiet",
-    availableUnits: 6,
-    totalUnits: 8,
-    unitLabel: "courts",
-    observedAt: "2026-10-06T14:00:00Z",
+    id: 1,
+    LocationId: 1001,
+    FacilityId: null,
+    CountOfParticipants: 8,
+    PercetageCapacity: null,
+    LastCount: 6,
+    IsClosed: false,
+    LastUpdatedDateAndTime: "2026-10-06T14:00:00Z",
+    runDatetime: "2026-10-06T14:01:00Z",
+    is_stale: false,
+    collection_is_stale: false,
   },
   {
-    areaId: "southwest-tennis",
-    crowdLevel: "moderate",
-    availableUnits: 2,
-    totalUnits: 6,
-    unitLabel: "courts",
-    observedAt: "2026-10-06T14:00:00Z",
+    id: 2,
+    LocationId: 1002,
+    FacilityId: null,
+    CountOfParticipants: 0,
+    PercetageCapacity: null,
+    LastCount: 0,
+    IsClosed: true,
+    LastUpdatedDateAndTime: "2026-10-06T14:00:00Z",
+    runDatetime: "2026-10-06T14:01:00Z",
+    is_stale: false,
+    collection_is_stale: false,
   },
   {
-    areaId: "southwest-weights",
-    crowdLevel: "busy",
-    availableUnits: null,
-    totalUnits: 1,
-    unitLabel: "rooms",
-    observedAt: "2026-10-06T14:00:00Z",
+    id: 3,
+    LocationId: 1003,
+    FacilityId: null,
+    CountOfParticipants: null,
+    PercetageCapacity: null,
+    LastCount: 42,
+    IsClosed: null,
+    LastUpdatedDateAndTime: null,
+    runDatetime: "2026-10-06T14:01:00Z",
+    is_stale: true,
+    collection_is_stale: false,
   },
 ];
+
+export const demoObservations: readonly AreaObservation[] =
+  demoReadings.flatMap((reading, index) => {
+    const observation = toAreaObservation(
+      { ...demoAreas[index], sourceLocationId: reading.LocationId },
+      reading,
+    );
+    return observation ? [observation] : [];
+  });

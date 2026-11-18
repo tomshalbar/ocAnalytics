@@ -24,7 +24,7 @@ function ApiProbe() {
     }
   };
   return (
-    <Screen headerShown>
+    <Screen headerShown refreshing={loading} onRefresh={refresh}>
       <Stack.Screen options={{ title: "API test (development)" }} />
       <AppText variant="title">Backend connection test</AppText>
       <AppText variant="caption">

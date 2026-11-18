@@ -1,57 +1,28 @@
-import { useCallback, useState } from "react";
-import { useFocusEffect } from "expo-router";
-import {
-  ApiError,
-  getLocations,
-  getRequestTimeoutMs,
-  type LocationReading,
-} from "./locations";
+import { useCallback, useMemo } from "react";
+import { getLocations } from "./locations";
+import { useApiResource } from "./use-api-resource";
 
 export function useLocations(locationId?: string) {
-  const [rows, setRows] = useState<LocationReading[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [revision, setRevision] = useState(0);
-  const refresh = useCallback(() => setRevision((value) => value + 1), []);
-  useFocusEffect(
-    useCallback(() => {
-      // Revision is the explicit manual-refresh token.
-      void revision;
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), getRequestTimeoutMs());
-      setLoading(true);
-      setError(null);
-      setNotFound(false);
-      setRows([]);
-      getLocations(locationId, controller.signal)
-        .then((data) => {
-          if (!controller.signal.aborted) setRows(data);
-        })
-        .catch((reason: unknown) => {
-          if (!active) return;
-          setNotFound(reason instanceof ApiError && reason.status === 404);
-          setError(
-            controller.signal.aborted
-              ? "Request timed out. Please retry."
-              : reason instanceof Error
-                ? reason.message
-                : "Unable to load occupancy data.",
-          );
-        })
-        .finally(() => {
-          if (active) {
-            clearTimeout(timer);
-            setLoading(false);
-          }
-        });
-      let active = true;
-      return () => {
-        active = false;
-        clearTimeout(timer);
-        controller.abort();
-      };
-    }, [locationId, revision]),
+  const load = useCallback(
+    (signal: AbortSignal) => getLocations(undefined, signal),
+    [],
   );
-  return { rows, loading, error, notFound, refresh };
+  const resource = useApiResource(load, "locations:latest");
+  const rows = useMemo(
+    () =>
+      (resource.data ?? []).filter(
+        (row) =>
+          locationId === undefined || row.LocationId === Number(locationId),
+      ),
+    [resource.data, locationId],
+  );
+  return {
+    ...resource,
+    rows,
+    notFound:
+      resource.notFound ||
+      (locationId !== undefined &&
+        resource.data !== undefined &&
+        rows.length === 0),
+  };
 }

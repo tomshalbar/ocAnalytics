@@ -3,18 +3,37 @@ export type CrowdLevel = "quiet" | "moderate" | "busy" | "unknown";
 
 export type Area = {
   id: string;
-  gymId: string;
+  gymId: string | null;
   name: string;
-  kind: "court" | "room" | "zone";
-  activity: Activity;
+  kind: "court" | "room" | "zone" | "location";
+  activity: Activity | null;
+  // Only populate after verifying the RecSports location-to-area mapping.
+  sourceLocationId: number | null;
 };
 
 // An observation is separate from an area and from any future prediction.
 export type AreaObservation = {
   areaId: string;
-  crowdLevel: CrowdLevel;
-  availableUnits: number | null;
-  totalUnits: number;
-  unitLabel: string;
-  observedAt: string;
+  readingId: number;
+  sourceLocationId: number;
+  sourceFacilityId: number | null;
+  participantCount: number | null;
+  reportedCapacityPercentage: number | null;
+  lastReportedCount: number | null;
+  isClosed: boolean | null;
+  sourceUpdatedAt: string | null;
+  collectedAt: string;
+  sourceIsStale: boolean;
+  collectionIsStale: boolean;
+};
+
+export type AreaStatistics = {
+  areaId: string;
+  sourceLocationId: number;
+  start: string;
+  end: string;
+  totalReadings: number;
+  averageLastCount: number | null;
+  minimumLastCount: number | null;
+  maximumLastCount: number | null;
 };

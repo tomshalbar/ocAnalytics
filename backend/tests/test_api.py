@@ -36,6 +36,58 @@ class ApiTests(unittest.TestCase):
             routes.get_latest_location(42)
         self.assertEqual(error.exception.status_code, 404)
 
+    @patch.object(routes, 'query', return_value={
+        'location_id': 3214,
+        'count': 15,
+        'is_closed': False,
+        'last_updated': datetime(2026, 9, 1, 12, 0)
+    })
+    def test_location_summary_success(self, query):
+        result = routes.get_location_summary(3214)
+
+        self.assertEqual(result['location_id'], 3214)
+        self.assertEqual(result['count'], 15)
+        self.assertFalse(result['is_closed'])
+
+        sql, params = query.call_args.args
+        self.assertIn('"LocationId" = %s', sql)
+        self.assertEqual(params, (3214,))
+
+
+    @patch.object(routes, 'query', return_value=None)
+    def test_location_summary_not_found(self, query):
+        with self.assertRaises(HTTPException) as error:
+            routes.get_location_summary(99999)
+
+        self.assertEqual(error.exception.status_code, 404)
+        query.assert_called_once()
+
+    @patch.object(routes, 'query', return_value=[
+        {'hour': 9, 'average_count': 15, 'total_readings': 6},
+        {'hour': 10, 'average_count': 22, 'total_readings': 6}
+    ])
+    def test_location_trends_success(self, query):
+        result = routes.get_location_trends(3214, self.start, self.end)
+
+        self.assertEqual(result['location_id'], 3214)
+        self.assertEqual(len(result['hourly_averages']), 2)
+        self.assertEqual(result['hourly_averages'][0]['hour'], 9)
+        self.assertEqual(result['hourly_averages'][1]['average_count'], 22)
+
+        sql, params = query.call_args.args
+        self.assertIn('"IsClosed" = false', sql)
+        self.assertIn('"LastCount" IS NOT NULL', sql)
+        self.assertEqual(params[0], 3214)
+        self.assertEqual(params[1:], routes.time_range(self.start, self.end))
+
+    @patch.object(routes, 'query', return_value=[])
+    def test_location_trends_not_found(self, query):
+        with self.assertRaises(HTTPException) as error:
+            routes.get_location_trends(99999, self.start, self.end)
+
+        self.assertEqual(error.exception.status_code, 404)
+        query.assert_called_once()
+
     @patch.object(routes, 'query', return_value=[])
     def test_history_pagination_and_half_open_range(self, query):
         self.assertEqual(routes.get_location_history(42, self.start, self.end, 20, 40), [])

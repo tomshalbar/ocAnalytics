@@ -1,4 +1,5 @@
 """Explicit API contracts; preserve upstream field names for existing clients."""
+
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -29,3 +30,20 @@ class StatisticsResponse(BaseModel):
     start: datetime
     end: datetime
     statistics: Statistics
+
+
+# schemas.py
+class ForecastPoint(BaseModel):
+    timestamp: datetime
+    median: float
+    lower: float
+    upper: float
+
+
+class Forecast(BaseModel):
+    location_id: int
+    model: str
+    used_fallback: bool
+    generated_at: datetime
+    data_through: datetime
+    forecast: list[ForecastPoint]

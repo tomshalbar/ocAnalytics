@@ -1,0 +1,3 @@
+# Optional: provision a suitably sized inference host before enabling.
+-r requirements.txt
+timesfm[torch]==3.0.2

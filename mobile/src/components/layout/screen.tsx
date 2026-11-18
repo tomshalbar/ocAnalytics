@@ -1,18 +1,33 @@
 import type { PropsWithChildren } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useBackendConnection } from "@/data/api/backend-connection";
+import { refreshAllResources } from "@/data/api/resource-cache";
 import { maxContentWidth, spacing } from "@/theme/tokens";
 import { useAppTheme } from "@/theme/use-app-theme";
 
-type Props = PropsWithChildren<{ headerShown?: boolean; standalone?: boolean }>;
+type Props = PropsWithChildren<{
+  headerShown?: boolean;
+  standalone?: boolean;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+}>;
 
 export function Screen({
   children,
   headerShown = false,
   standalone = false,
+  refreshing,
+  onRefresh,
 }: Props) {
   const { colors } = useAppTheme();
+  const connection = useBackendConnection();
+  const handleRefresh = () => {
+    refreshAllResources();
+    (onRefresh ?? connection.retry)();
+  };
+  const isRefreshing = refreshing ?? connection.status === "checking";
   // Navigator headers and the non-overlay tab bar own their respective insets.
   return (
     <SafeAreaView
@@ -28,6 +43,10 @@ export function Screen({
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        alwaysBounceVertical
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+        }
       >
         {children}
       </ScrollView>

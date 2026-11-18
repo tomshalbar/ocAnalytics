@@ -11,5 +11,6 @@ dependencies:
   - pip:
       - "psycopg[binary]"
       - python-dotenv
+      - cachetools
       - fastapi
       - "uvicorn[standard]"
