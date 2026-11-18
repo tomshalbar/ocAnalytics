@@ -1,17 +1,18 @@
 from fastapi import FastAPI
 
 from backend.api.routes import router
+from backend.api.health import router as health_router
 
 import logging
 from contextlib import asynccontextmanager
 from starlette.concurrency import run_in_threadpool
-from backend.services.forecasting.config import forecast_enabled
+from backend.services.forecasting.config import forecast_enabled, forecast_backend
 from backend.services.forecasting import services as forecasting
 
 
 @asynccontextmanager
 async def lifespan(app):
-    if forecast_enabled():
+    if forecast_enabled() and forecast_backend() == "model":
         try:
             await run_in_threadpool(forecasting.preload)
         except Exception:
@@ -30,3 +31,4 @@ def root():
 
 
 app.include_router(router)
+app.include_router(health_router)

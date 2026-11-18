@@ -151,7 +151,7 @@ function rangeQuery(range: LocationTimeRange) {
   return `start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`;
 }
 
-async function getLocationResource(
+export async function getLocationResource(
   locationId: string,
   resource: string,
   query: string,

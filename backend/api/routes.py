@@ -11,7 +11,13 @@ import psycopg
 from backend.api.schemas import Observation, StatisticsResponse
 from backend.db.database import get_db_connection
 from backend.services.forecasting import services as forecasting
-from backend.services.forecasting.config import MAX_HOURS, MODEL_BY_LOCATION, forecast_enabled
+from backend.services.forecasting.config import (
+    MAX_HOURS,
+    MODEL_BY_LOCATION,
+    forecast_enabled,
+    forecast_backend,
+)
+from backend.services.forecasting import repository as forecast_repository
 from backend.api.schemas import Observation, Forecast
 
 router = APIRouter()
@@ -185,6 +191,18 @@ def get_location_stats(location_id: int, start: datetime, end: datetime):
 def get_location_forecast(location_id: int, hours: int = Query(24, ge=1, le=MAX_HOURS)):
     if not forecast_enabled():
         raise HTTPException(503, "Forecasting is disabled on this deployment")
+    if forecast_backend() == "database":
+        try:
+            return forecast_repository.get_stored_forecast(location_id, hours)
+        except forecast_repository.ForecastUnavailable:
+            raise HTTPException(
+                503, "Fresh predictions are not available for this location"
+            ) from None
+        except (psycopg.Error, ValueError):
+            logger.exception("Stored forecast lookup failed")
+            raise HTTPException(503, "Predictions temporarily unavailable") from None
+    if forecast_backend() != "model":
+        raise HTTPException(503, "Forecast backend is not configured correctly")
     if location_id not in MODEL_BY_LOCATION:
         raise HTTPException(404, "No forecast model for this location")
     try:

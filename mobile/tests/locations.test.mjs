@@ -357,10 +357,10 @@ test("API client contract and failure handling", async (t) => {
       },
     );
     await t.test("staleness takes precedence over open status", () => {
-      assert.match(readingStatus({ ...reading, is_stale: true }), /Outdated/);
+      assert.match(readingStatus({ ...reading, is_stale: true }), /Last updated/);
       assert.match(
         readingStatus({ ...reading, collection_is_stale: true }),
-        /Outdated/,
+        /Last updated/,
       );
       assert.equal(readingStatus(reading), "Reported open");
       assert.equal(
