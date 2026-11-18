@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 
 import {
-  getLocationHistory,
+  getRecentLocationReadings,
+  recentReadingsCacheKey,
   getLocationStatistics,
   getRequestTimeoutMs,
 } from "./locations";
@@ -26,13 +27,8 @@ export function usePrefetchAppData() {
     dailyStatistics.forEach((resource) => void resource.ensureLoaded());
     ids.forEach((id) => {
       void getCachedResource(
-        `history:${id}:days:1`,
-        (signal) =>
-          getLocationHistory(
-            id,
-            { ...recentRange(1), limit: 50, offset: 0 },
-            signal,
-          ),
+        recentReadingsCacheKey(id),
+        (signal) => getRecentLocationReadings(id, signal),
         timeout,
       ).ensureLoaded();
     });

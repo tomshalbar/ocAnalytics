@@ -1,3 +1,5 @@
+import { parseTimestamp } from "../../time/date-time.ts";
+
 const timeUnits = [
   { name: "year", seconds: 365 * 24 * 60 * 60 },
   { name: "month", seconds: 30 * 24 * 60 * 60 },
@@ -10,7 +12,7 @@ export function lastUpdatedLabel(
   timestamp: string | null,
   now = Date.now(),
 ): string {
-  const updatedAt = timestamp === null ? NaN : Date.parse(timestamp);
+  const updatedAt = parseTimestamp(timestamp);
   if (!Number.isFinite(updatedAt)) return "Last updated time unavailable";
 
   const elapsedSeconds = Math.max(0, (now - updatedAt) / 1000);

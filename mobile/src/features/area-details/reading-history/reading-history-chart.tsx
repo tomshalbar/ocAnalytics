@@ -5,7 +5,9 @@ import { AppText } from "@/components/ui/app-text";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { LocationReading } from "@/data/api/location-contracts";
+import { RECENT_READING_LIMIT } from "@/data/api/location-contracts";
 import { spacing } from "@/theme/tokens";
+import { useDateTime } from "@/time/date-time-provider";
 import { buildReadingChart } from "./chart-data";
 import { ReadingHistoryPlot, PLOT_HEIGHT } from "./reading-history-plot";
 
@@ -14,7 +16,11 @@ export function ReadingHistoryChart({
 }: {
   readings: readonly LocationReading[];
 }) {
-  const chart = useMemo(() => buildReadingChart(readings), [readings]);
+  const dateTime = useDateTime();
+  const chart = useMemo(
+    () => buildReadingChart(readings, dateTime),
+    [readings, dateTime],
+  );
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const selected = chart.months
     .flatMap((month) => month.bars)
@@ -24,13 +30,15 @@ export function ReadingHistoryChart({
     return (
       <EmptyState
         title="No reported counts to graph"
-        description="Snapshots in this page do not contain valid last reported counts."
+        description="The most recent snapshots do not contain valid last reported counts."
       />
     );
 
   return (
     <Card>
-      <AppText variant="label">Live Counts From the Past 24 Hours</AppText>
+      <AppText variant="label">
+        {RECENT_READING_LIMIT} Most Recent Readings
+      </AppText>
       <View style={styles.chart}>
         <View style={styles.axis}>
           {chart.ticks.map((tick) => (
@@ -54,11 +62,11 @@ export function ReadingHistoryChart({
         </ScrollView>
       </View>
       <AppText variant="caption" tone="muted" style={styles.axisTitle}>
-        Month
+        Hour
       </AppText>
       <AppText variant="caption" accessibilityLiveRegion="polite">
         {selected
-          ? `Last reported count: ${selected.count} — ${new Date(selected.collectedAt).toLocaleString("en-US", { month: "2-digit", day: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true })}`
+          ? `Last reported count: ${selected.count} — ${dateTime.formatDateTime(selected.collectedAt)}`
           : "Tap a bar to see its last reported count, date, and time."}
       </AppText>
       {chart.omittedCount > 0 && (

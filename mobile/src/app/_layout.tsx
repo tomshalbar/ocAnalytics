@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { useAppTheme } from "@/theme/use-app-theme";
 import { BackendConnectionProvider } from "@/data/api/backend-connection";
 import { usePrefetchAppData } from "@/data/api/use-prefetch-app-data";
+import { DateTimeProvider } from "@/time/date-time-provider";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -25,17 +26,19 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={navigationTheme}>
-      <BackendConnectionProvider>
-        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-        <Stack
-          screenOptions={{
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" options={{ headerShown: false }} />
-        </Stack>
-      </BackendConnectionProvider>
+      <DateTimeProvider>
+        <BackendConnectionProvider>
+          <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+          <Stack
+            screenOptions={{
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          >
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" options={{ headerShown: false }} />
+          </Stack>
+        </BackendConnectionProvider>
+      </DateTimeProvider>
     </ThemeProvider>
   );
 }

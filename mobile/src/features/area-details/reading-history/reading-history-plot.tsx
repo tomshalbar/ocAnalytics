@@ -3,24 +3,11 @@ import { StyleSheet, View } from "react-native";
 import { AppText } from "@/components/ui/app-text";
 import { spacing } from "@/theme/tokens";
 import { useAppTheme } from "@/theme/use-app-theme";
+import { useDateTime } from "@/time/date-time-provider";
 import type { ReadingMonth } from "./chart-data";
 import { ReadingHistoryBar } from "./reading-history-bar";
 
 export const PLOT_HEIGHT = 180;
-const MONTH_LABELS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
 
 export function ReadingHistoryPlot({
   months,
@@ -34,6 +21,16 @@ export function ReadingHistoryPlot({
   onSelect: (id: number) => void;
 }) {
   const { colors } = useAppTheme();
+  const { formatHour } = useDateTime();
+  const seenLabels = new Set<string>();
+  const readings = months
+    .flatMap(({ bars }) => bars)
+    .map((bar) => {
+      const hour = formatHour(bar.collectedAt);
+      const label = seenLabels.has(hour) ? "" : hour;
+      seenLabels.add(hour);
+      return { bar, label };
+    });
 
   return (
     <View style={styles.plot}>
@@ -45,22 +42,19 @@ export function ReadingHistoryPlot({
           />
         ))}
       </View>
-      <View style={styles.months}>
-        {months.map(({ key, month, bars }) => (
-          <View key={key} style={[styles.month, { flexGrow: bars.length }]}>
-            <View style={styles.bars}>
-              {bars.map((bar) => (
-                <ReadingHistoryBar
-                  key={bar.id}
-                  bar={bar}
-                  height={(bar.count / maximum) * PLOT_HEIGHT}
-                  selected={bar.id === selectedId}
-                  onSelect={onSelect}
-                />
-              ))}
+      <View style={styles.readings}>
+        {readings.map(({ bar, label }) => (
+          <View key={bar.id} style={styles.reading}>
+            <View style={styles.bar}>
+              <ReadingHistoryBar
+                bar={bar}
+                height={(bar.count / maximum) * PLOT_HEIGHT}
+                selected={bar.id === selectedId}
+                onSelect={onSelect}
+              />
             </View>
-            <AppText variant="caption" tone="muted" style={styles.monthLabel}>
-              {MONTH_LABELS[month - 1]}
+            <AppText variant="caption" tone="muted" style={styles.hourLabel}>
+              {label}
             </AppText>
           </View>
         ))}
@@ -80,8 +74,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   gridLine: { height: StyleSheet.hairlineWidth },
-  months: { flexDirection: "row" },
-  month: { minWidth: 32 },
-  bars: { height: PLOT_HEIGHT, flexDirection: "row", alignItems: "flex-end" },
-  monthLabel: { textAlign: "left", marginTop: spacing.sm },
+  readings: { flexDirection: "row" },
+  reading: { flex: 1, minWidth: 48 },
+  bar: { height: PLOT_HEIGHT },
+  hourLabel: { textAlign: "center", marginTop: spacing.sm },
 });

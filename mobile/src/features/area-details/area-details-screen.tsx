@@ -8,30 +8,27 @@ import { AppText } from "@/components/ui/app-text";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { areaForLocation, toAreaObservation } from "@/data/adapters/locations";
-import { getLocationHistory, isVisibleLocation } from "@/data/api/locations";
+import {
+  getRecentLocationReadings,
+  recentReadingsCacheKey,
+  isVisibleLocation,
+} from "@/data/api/locations";
+import { RECENT_READING_LIMIT } from "@/data/api/location-contracts";
 import { useApiResource } from "@/data/api/use-api-resource";
 import { useLocations } from "@/data/api/use-locations";
 import { useLocationStatistics } from "@/data/api/use-location-statistics";
-import { recentRange } from "@/data/api/recent-range";
 import { ObservationDetails } from "@/features/areas/observation-details";
 import { RequestState } from "@/features/areas/request-state";
 import { ReadingHistoryChart } from "./reading-history/reading-history-chart";
-
-const PAGE_SIZE = 50;
 
 export function AreaDetailsScreen({ areaId }: { areaId: string }) {
   const latest = useLocations(areaId);
   const statistics = useLocationStatistics(areaId, 1);
   const loadHistory = useCallback(
-    (signal: AbortSignal) =>
-      getLocationHistory(
-        areaId,
-        { ...recentRange(1), limit: PAGE_SIZE, offset: 0 },
-        signal,
-      ),
+    (signal: AbortSignal) => getRecentLocationReadings(areaId, signal),
     [areaId],
   );
-  const history = useApiResource(loadHistory, `history:${areaId}:days:1`);
+  const history = useApiResource(loadHistory, recentReadingsCacheKey(areaId));
   const area = areaForLocation(Number(areaId));
   const observation = latest.rows[0] && toAreaObservation(area, latest.rows[0]);
   const refreshing = latest.loading || statistics.loading || history.loading;
@@ -62,7 +59,7 @@ export function AreaDetailsScreen({ areaId }: { areaId: string }) {
     <Screen headerShown refreshing={refreshing} onRefresh={refresh}>
       <ScreenHeading
         title={area.name}
-        subtitle="Latest source reading and the past 24 hours of collected snapshots."
+        subtitle={`Latest source reading and the ${RECENT_READING_LIMIT} most recent collected snapshots.`}
       />
       <Section title="Latest reading">
         <RequestState
@@ -83,15 +80,22 @@ export function AreaDetailsScreen({ areaId }: { areaId: string }) {
       </Section>
       <Section
         title="Reading history"
-        description="Latest valid last reported count per hour in the past 24 hours."
+        description={`The ${RECENT_READING_LIMIT} most recent readings, ordered oldest to newest.`}
       >
+        <RequestState
+          loading={history.loading}
+          error={history.error}
+          refresh={history.refresh}
+          showRefresh={false}
+          variant="inline"
+        />
         {!!history.data?.length && (
           <ReadingHistoryChart readings={history.data} />
         )}
         {!history.loading && !history.error && history.data?.length === 0 && (
           <EmptyState
-            title="No readings in this page"
-            description="An empty page does not establish that this location was closed."
+            title="No recent readings"
+            description="No collected snapshots are available for this location."
           />
         )}
       </Section>

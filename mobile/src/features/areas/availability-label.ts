@@ -14,7 +14,3 @@ export function observationStatus(observation?: AreaObservation) {
   if (observation.isClosed === false) return "Reported open";
   return "Opening status unknown";
 }
-
-export function observationTime(value: string | null) {
-  return value === null ? "Not provided" : new Date(value).toLocaleString();
-}

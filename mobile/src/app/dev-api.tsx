@@ -5,13 +5,11 @@ import { Screen } from "@/components/layout/screen";
 import { AppText } from "@/components/ui/app-text";
 import { Card } from "@/components/ui/card";
 import { useLocations } from "@/data/api/use-locations";
-import {
-  formatReadingTime,
-  readingStatus,
-  getRequestTimeoutMs,
-} from "@/data/api/locations";
+import { readingStatus, getRequestTimeoutMs } from "@/data/api/locations";
+import { useDateTime } from "@/time/date-time-provider";
 
 function ApiProbe() {
+  const { formatDateTime } = useDateTime();
   const [locationId, setLocationId] = useState<string | undefined>();
   const [knownId, setKnownId] = useState<string>();
   const { rows, loading, error, notFound, refresh } = useLocations(locationId);
@@ -84,9 +82,9 @@ function ApiProbe() {
           <AppText>Last reported count: {first.LastCount ?? "Unknown"}</AppText>
           <AppText>{readingStatus(first)}</AppText>
           <AppText>
-            Source updated: {formatReadingTime(first.LastUpdatedDateAndTime)}
+            Source updated: {formatDateTime(first.LastUpdatedDateAndTime)}
           </AppText>
-          <AppText>Collected: {formatReadingTime(first.runDatetime)}</AppText>
+          <AppText>Collected: {formatDateTime(first.runDatetime)}</AppText>
         </Card>
       )}
       <View>

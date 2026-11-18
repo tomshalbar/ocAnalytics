@@ -3,10 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { AppText } from "@/components/ui/app-text";
 import { Card } from "@/components/ui/card";
 import type { AreaStatistics } from "@/domain/area";
-
-function observationDate(value: string | null) {
-  return value === null ? "Not provided" : new Date(value).toLocaleDateString();
-}
+import { useDateTime } from "@/time/date-time-provider";
 
 export function StatisticsCard({
   statistics,
@@ -17,6 +14,7 @@ export function StatisticsCard({
   title: string;
   compactCounts?: boolean;
 }) {
+  const { formatDate } = useDateTime();
   const counts = [
     {
       label: "Average last reported count",
@@ -39,8 +37,8 @@ export function StatisticsCard({
     <Card>
       <AppText variant="heading">{title}</AppText>
       <AppText variant="caption" tone="muted">
-        Readings from {observationDate(statistics.start)} to{" "}
-        {observationDate(statistics.end)}
+        Readings from {formatDate(statistics.start)} to{" "}
+        {formatDate(statistics.end)}
       </AppText>
       {compactCounts ? (
         <View style={styles.countsRow}>

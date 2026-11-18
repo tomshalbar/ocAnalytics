@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { useAppTheme } from "@/theme/use-app-theme";
+import { useDateTime } from "@/time/date-time-provider";
 import type { ReadingBar } from "./chart-data";
 
 export function ReadingHistoryBar({
@@ -15,11 +16,12 @@ export function ReadingHistoryBar({
   onSelect: (id: number) => void;
 }) {
   const { colors } = useAppTheme();
+  const { formatDateTime } = useDateTime();
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${new Date(bar.collectedAt).toLocaleString()}: last reported count ${bar.count}`}
+      accessibilityLabel={`${formatDateTime(bar.collectedAt)}: last reported count ${bar.count}`}
       accessibilityHint="Show the count, date, and time below the graph"
       accessibilityState={{ selected }}
       onPress={() => onSelect(bar.id)}
