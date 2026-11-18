@@ -6,7 +6,11 @@ import { useAppTheme } from "@/theme/use-app-theme";
 
 export type IconName = ComponentProps<typeof Ionicons>["name"];
 
-type Props = { name: IconName; size?: number; color?: ColorValue };
+type Props = {
+  name: IconName;
+  size?: number;
+  color?: ColorValue | null;
+};
 
 export function AppIcon({ name, size = 22, color }: Props) {
   const { colors } = useAppTheme();
@@ -14,7 +18,7 @@ export function AppIcon({ name, size = 22, color }: Props) {
     <Ionicons
       name={name}
       size={size}
-      color={color ?? colors.muted}
+      color={(color ?? colors.muted) as ComponentProps<typeof Ionicons>["color"]}
       accessible={false}
       aria-hidden
       accessibilityElementsHidden

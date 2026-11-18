@@ -1,5 +1,5 @@
 import type { AreaObservation } from "@/domain/area";
-import { lastUpdatedLabel } from "@/domain/readings/last-updated-label";
+import { lastUpdatedLabel } from "../../domain/readings/last-updated-label.ts";
 
 export function availabilityLabel(observation?: AreaObservation) {
   if (!observation) return "No reading available";

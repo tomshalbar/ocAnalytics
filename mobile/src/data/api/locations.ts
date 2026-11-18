@@ -1,4 +1,4 @@
-import { lastUpdatedLabel } from "@/domain/readings/last-updated-label";
+import { lastUpdatedLabel } from "../../domain/readings/last-updated-label.ts";
 import type {
   LocationReading,
   LocationStatisticsResponse,
@@ -149,7 +149,7 @@ function rangeQuery(range: LocationTimeRange) {
   return `start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`;
 }
 
-async function getLocationResource(
+export async function getLocationResource(
   locationId: string,
   resource: string,
   query: string,
