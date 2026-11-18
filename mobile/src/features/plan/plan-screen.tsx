@@ -8,6 +8,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { areaForLocation } from "@/data/adapters/locations";
 import { useLocations } from "@/data/api/use-locations";
 import { useLocationForecasts } from "@/data/api/use-location-forecasts";
+import {
+  facilityFilterId,
+  facilityFilterOptions,
+} from "@/data/reference/source-facilities";
 import { RequestState } from "@/features/areas/request-state";
 import { RecommendationCard } from "./components/recommendation-card";
 import { buildPlanOptions, filterPlanOptions } from "./plan-options";
@@ -27,7 +31,7 @@ const dayOptions = [
 
 export function PlanScreen() {
   const locations = useLocations();
-  const [selectedLocation, setSelectedLocation] = useState("all");
+  const [selectedFacilityId, setSelectedFacilityId] = useState<string>();
   const [selectedDay, setSelectedDay] = useState("all");
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
@@ -41,23 +45,21 @@ export function PlanScreen() {
     () => buildPlanOptions(forecasts.data?.forecasts ?? [], now),
     [forecasts.data, now],
   );
-  const locationOptions = [
-    { value: "all", label: "All locations" },
-    ...locations.rows.map((row) => ({
-      value: String(row.LocationId),
-      label: areaForLocation(row.LocationId).name,
-    })),
-  ];
-  const locationId = locationOptions.some((o) => o.value === selectedLocation)
-    ? selectedLocation
-    : "all";
+  const facilityOptions = facilityFilterOptions(
+    locations.rows.map((row) => facilityFilterId(row.FacilityId)),
+  );
+  const facilityId = facilityOptions.some(
+    (option) => option.value === selectedFacilityId,
+  )
+    ? selectedFacilityId
+    : facilityOptions[0]?.value;
   const day = dayOptions.some((o) => o.value === selectedDay)
     ? selectedDay
     : "all";
   const visibleOptions = filterPlanOptions(
     planOptions,
     locations.rows,
-    locationId,
+    facilityId,
     day,
   );
   const unavailable = forecasts.data?.unavailableLocationIds ?? [];
@@ -83,14 +85,16 @@ export function PlanScreen() {
       {(loading || error) && (
         <RequestState loading={loading} error={error} refresh={refresh} />
       )}
-      <Section title="Location">
-        <ChoiceGroup
-          label="Filter visits by location"
-          options={locationOptions}
-          value={locationId}
-          onChange={setSelectedLocation}
-        />
-      </Section>
+      {facilityOptions.length > 0 && (
+        <Section title="Location">
+          <ChoiceGroup
+            label="Source facility"
+            options={facilityOptions}
+            value={facilityId!}
+            onChange={setSelectedFacilityId}
+          />
+        </Section>
+      )}
       <Section title="Day">
         <ChoiceGroup
           label="Filter visits by day"
@@ -113,7 +117,7 @@ export function PlanScreen() {
         {!loading && !error && visibleOptions.length === 0 && (
           <EmptyState
             title="No matching visits"
-            description="No future forecast times match these filters. Try All locations and All days, or pull to refresh predictions."
+            description="No future forecast times match these filters. Try another facility or All days, or pull to refresh predictions."
           />
         )}
       </Section>

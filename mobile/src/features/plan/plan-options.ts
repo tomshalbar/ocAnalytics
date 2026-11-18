@@ -1,5 +1,9 @@
 import type { LocationForecast } from "../../data/api/forecasts";
 import type { LocationReading } from "../../data/api/location-contracts";
+import {
+  facilityFilterId,
+  matchesFacilityFilter,
+} from "../../data/reference/source-facilities.ts";
 import type { VisitRecommendation } from "../../domain/recommendation";
 
 export type PlanOption = {
@@ -66,16 +70,22 @@ export function buildPlanOptions(
 export function filterPlanOptions(
   options: readonly PlanOption[],
   locations: readonly LocationReading[],
-  locationId: string,
+  facilityId: string | undefined,
   day: string,
 ) {
   const knownIds = new Set(
-    locations.map((location) => String(location.LocationId)),
+    locations
+      .filter((location) =>
+        matchesFacilityFilter(
+          facilityFilterId(location.FacilityId),
+          facilityId,
+        ),
+      )
+      .map((location) => String(location.LocationId)),
   );
   return options.filter(
     (option) =>
       knownIds.has(option.locationId) &&
-      (locationId === "all" || option.locationId === locationId) &&
       (day === "all" || option.recommendation.dayLabel === day),
   );
 }

@@ -68,23 +68,50 @@ test("ranks unrounded counts across locations and retains fallback attribution",
   assert.deepEqual(buildPlanOptions([forecast(1, [point(18, 7, 0)])], now), []);
 });
 
-test("combines location and weekday filters, excluding removed locations", () => {
+test("combines facility and weekday filters, grouping Student Rec facility IDs", () => {
   const options = buildPlanOptions(
     [
       forecast(1, [point(18, 9, 1), point(19, 9, 2)]),
       forecast(2, [point(18, 9, 0)]),
+      forecast(3, [point(19, 10, 3)]),
     ],
     now,
   );
-  const locations = [{ LocationId: 1 }, { LocationId: 2 }];
-  assert.equal(filterPlanOptions(options, locations, "all", "all").length, 3);
-  const filtered = filterPlanOptions(options, locations, "1", "Thursday");
-  assert.equal(filtered.length, 1);
-  assert.equal(filtered[0].locationId, "1");
-  assert.equal(filtered[0].dayKey, "2026-11-19");
+  const locations = [
+    { LocationId: 1, FacilityId: 597 },
+    { LocationId: 2, FacilityId: 596 },
+    { LocationId: 3, FacilityId: 725 },
+  ];
+  assert.equal(filterPlanOptions(options, locations, "all", "all").length, 4);
+  assert.equal(
+    filterPlanOptions(options, locations, "all", "Thursday").length,
+    2,
+  );
   assert.equal(filterPlanOptions(options, [], "all", "all").length, 0);
   assert.equal(
-    filterPlanOptions(options, locations, "2", "Thursday").length,
+    filterPlanOptions(options, locations, "Student Rec", "all").length,
+    3,
+  );
+  assert.equal(
+    filterPlanOptions(options, locations, "Southwest Rec", "all").length,
+    1,
+  );
+  const filtered = filterPlanOptions(
+    options,
+    locations,
+    "Student Rec",
+    "Thursday",
+  );
+  assert.equal(filtered.length, 2);
+  assert.equal(filtered[0].locationId, "1");
+  assert.equal(filtered[0].dayKey, "2026-11-19");
+  assert.equal(filterPlanOptions(options, [], "Student Rec", "all").length, 0);
+  assert.equal(
+    filterPlanOptions(options, locations, undefined, "all").length,
+    0,
+  );
+  assert.equal(
+    filterPlanOptions(options, locations, "Southwest Rec", "Thursday").length,
     0,
   );
 });

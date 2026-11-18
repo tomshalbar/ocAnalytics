@@ -10,7 +10,11 @@ import { useLocations } from "@/data/api/use-locations";
 import { getLocationStatistics } from "@/data/api/locations";
 import { useApiResource } from "@/data/api/use-api-resource";
 import { recentRange } from "@/data/api/recent-range";
-import { facilityFilterId } from "@/data/reference/source-facilities";
+import {
+  facilityFilterId,
+  facilityFilterOptions,
+  matchesFacilityFilter,
+} from "@/data/reference/source-facilities";
 import { RequestState } from "@/features/areas/request-state";
 import { useLocationForecast } from "@/data/api/use-location-forecast";
 import { ForecastCard } from "./forecast-card";
@@ -56,22 +60,23 @@ export function TrendsScreen() {
       ? [{ area, summary, facilityId: facilityFilterId(location.FacilityId) }]
       : [];
   });
-  const facilityOptions = Array.from(
-    new Set(allSummaries.map((entry) => entry.facilityId)),
-    (id) => ({ value: id, label: id === "unknown" ? "Not provided" : id }),
+  const facilityOptions = facilityFilterOptions(
+    allSummaries.map((entry) => entry.facilityId),
   );
   const facilityId = facilityOptions.some(
     (option) => option.value === selectedFacilityId,
   )
     ? selectedFacilityId
     : facilityOptions[0]?.value;
-  const summaries = allSummaries.filter(
-    (entry) => entry.facilityId === facilityId,
+  const summaries = allSummaries.filter((entry) =>
+    matchesFacilityFilter(entry.facilityId, facilityId),
   );
 
   const forecastOptions = locations.rows
     .filter(
-      (row) => !facilityId || facilityFilterId(row.FacilityId) === facilityId,
+      (row) =>
+        !facilityId ||
+        matchesFacilityFilter(facilityFilterId(row.FacilityId), facilityId),
     )
     .map((row) => ({
       value: String(row.LocationId),
