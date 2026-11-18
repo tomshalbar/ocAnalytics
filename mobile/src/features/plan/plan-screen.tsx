@@ -16,23 +16,9 @@ import { RequestState } from "@/features/areas/request-state";
 import { RecommendationCard } from "./components/recommendation-card";
 import { buildPlanOptions, filterPlanOptions } from "./plan-options";
 
-const dayOptions = [
-  { value: "all", label: "All days" },
-  ...[
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ].map((day) => ({ value: day, label: day })),
-];
-
 export function PlanScreen() {
   const locations = useLocations();
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>();
-  const [selectedDay, setSelectedDay] = useState("all");
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60000);
@@ -53,14 +39,11 @@ export function PlanScreen() {
   )
     ? selectedFacilityId
     : facilityOptions[0]?.value;
-  const day = dayOptions.some((o) => o.value === selectedDay)
-    ? selectedDay
-    : "all";
   const visibleOptions = filterPlanOptions(
     planOptions,
     locations.rows,
     facilityId,
-    day,
+    "all",
   );
   const unavailable = forecasts.data?.unavailableLocationIds ?? [];
   const error =
@@ -95,14 +78,6 @@ export function PlanScreen() {
           />
         </Section>
       )}
-      <Section title="Day">
-        <ChoiceGroup
-          label="Filter visits by day"
-          options={dayOptions}
-          value={day}
-          onChange={setSelectedDay}
-        />
-      </Section>
       <Section
         title="Suggested times"
         description={`${visibleOptions.length} suggested ${visibleOptions.length === 1 ? "visit" : "visits"}, lowest predicted count first. Best hour per location each day, in your local time zone. Predictions do not confirm opening hours.`}
@@ -117,7 +92,7 @@ export function PlanScreen() {
         {!loading && !error && visibleOptions.length === 0 && (
           <EmptyState
             title="No matching visits"
-            description="No future forecast times match these filters. Try another facility or All days, or pull to refresh predictions."
+            description="No future forecast times match this facility. Try another facility or Both, or pull to refresh predictions."
           />
         )}
       </Section>

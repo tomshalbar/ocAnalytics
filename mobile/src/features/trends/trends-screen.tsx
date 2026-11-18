@@ -16,7 +16,7 @@ import {
   matchesFacilityFilter,
 } from "@/data/reference/source-facilities";
 import { RequestState } from "@/features/areas/request-state";
-import { useLocationForecast } from "@/data/api/use-location-forecast";
+import { useLocationForecasts } from "@/data/api/use-location-forecasts";
 import { ForecastCard } from "./forecast-card";
 import { StatisticsCard } from "@/features/areas/statistics-card";
 
@@ -29,7 +29,6 @@ const rangeOptions = [
 export function TrendsScreen() {
   const locations = useLocations();
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>();
-  const [selectedForecastId, setSelectedForecastId] = useState<string>();
   const [days, setDays] = useState("7");
   const locationIds = useMemo(
     () => locations.rows.map((row) => String(row.LocationId)),
@@ -72,30 +71,15 @@ export function TrendsScreen() {
     matchesFacilityFilter(entry.facilityId, facilityId),
   );
 
-  const forecastOptions = locations.rows
-    .filter(
-      (row) =>
-        !facilityId ||
-        matchesFacilityFilter(facilityFilterId(row.FacilityId), facilityId),
-    )
-    .map((row) => ({
-      value: String(row.LocationId),
-      label: areaForLocation(row.LocationId).name,
-    }));
-  const forecastId = forecastOptions.some(
-    (option) => option.value === selectedForecastId,
-  )
-    ? selectedForecastId
-    : forecastOptions[0]?.value;
-  const forecast = useLocationForecast(forecastId);
+  const forecasts = useLocationForecasts(locationIds);
 
   return (
     <Screen
-      refreshing={locations.loading || statistics.loading || forecast.loading}
+      refreshing={locations.loading || statistics.loading || forecasts.loading}
       onRefresh={() => {
         locations.refresh();
         statistics.refresh();
-        forecast.refresh();
+        forecasts.refresh();
       }}
     >
       <ScreenHeading
@@ -158,31 +142,36 @@ export function TrendsScreen() {
           ))}
         </Section>
       )}
-      <Section title="Insights">
-        {forecastId ? (
-          <>
-            <ChoiceGroup
-              label="Prediction location"
-              options={forecastOptions}
-              value={forecastId}
-              onChange={setSelectedForecastId}
-            />
-            <RequestState
-              loading={forecast.loading}
-              error={forecast.error}
-              refresh={forecast.refresh}
-            />
-            {forecast.data && !forecast.error && (
-              <ForecastCard
-                forecast={forecast.data}
-                title={`${areaForLocation(Number(forecastId)).name} · Next 24 hours`}
-              />
-            )}
-          </>
-        ) : (
+      <Section
+        title="Insights"
+        description="Hourly predictions for all locations over the next 24 hours."
+      >
+        {(forecasts.loading || forecasts.error) && (
+          <RequestState
+            loading={forecasts.loading}
+            error={forecasts.error}
+            refresh={forecasts.refresh}
+          />
+        )}
+        {forecasts.data?.forecasts.map((forecast) => (
+          <ForecastCard
+            key={forecast.location_id}
+            forecast={forecast}
+            title={`${areaForLocation(forecast.location_id).name} · Next 24 hours`}
+          />
+        ))}
+        {forecasts.data?.unavailableLocationIds.map((id) => (
+          <RequestState
+            key={id}
+            loading={forecasts.loading}
+            error={`Predictions are temporarily unavailable for ${areaForLocation(Number(id)).name}.`}
+            refresh={forecasts.refresh}
+          />
+        ))}
+        {!locations.loading && !locations.error && locationIds.length === 0 && (
           <EmptyState
             icon="bulb-outline"
-            title="No prediction location available"
+            title="No prediction locations available"
             description="Load source locations to view occupancy predictions."
           />
         )}

@@ -54,7 +54,7 @@ export function buildPlanOptions(
             })
             .replace(/\s/g, ""),
           expectedCrowd: "unknown",
-          reason: `Predicted ${Math.round(point.median)} people (range ${Math.round(point.lower)}–${Math.round(point.upper)}). ${forecast.used_fallback ? "Baseline forecast (fallback)" : `Model: ${forecast.model}`}.`,
+          reason: `Predicted ${Math.round(point.median)} people (range ${Math.round(point.lower)}–${Math.round(point.upper)}).${forecast.used_fallback ? " Baseline forecast (fallback)." : ""}`,
         },
       });
     }

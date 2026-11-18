@@ -63,7 +63,7 @@ test("ranks unrounded counts across locations and retains fallback attribution",
     options[0].recommendation.reason,
     /Baseline forecast \(fallback\)/,
   );
-  assert.match(options[2].recommendation.reason, /Model: test-model/);
+  assert.doesNotMatch(options[2].recommendation.reason, /Model:|test-model/);
   assert.deepEqual(buildPlanOptions([], now), []);
   assert.deepEqual(buildPlanOptions([forecast(1, [point(18, 7, 0)])], now), []);
 });
