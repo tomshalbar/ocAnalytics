@@ -7,24 +7,27 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ChoiceGroup } from "@/components/ui/choice-group";
 import { useLocations } from "@/data/api/use-locations";
 import { areaForLocation, toAreaObservation } from "@/data/adapters/locations";
-import { facilityFilterId } from "@/data/reference/source-facilities";
+import {
+  facilityFilterId,
+  facilityFilterOptions,
+  matchesFacilityFilter,
+} from "@/data/reference/source-facilities";
 import { RequestState } from "@/features/areas/request-state";
 import { AreaCard } from "./components/area-card";
 
 export function HomeScreen() {
   const { rows, loading, error, refresh } = useLocations();
   const [selectedFacilityId, setSelectedFacilityId] = useState<string>();
-  const facilityOptions = Array.from(
-    new Set(rows.map((row) => facilityFilterId(row.FacilityId))),
-    (id) => ({ value: id, label: id === "unknown" ? "Not provided" : id }),
+  const facilityOptions = facilityFilterOptions(
+    rows.map((row) => facilityFilterId(row.FacilityId)),
   );
   const facilityId = facilityOptions.some(
     (option) => option.value === selectedFacilityId,
   )
     ? selectedFacilityId
     : facilityOptions[0]?.value;
-  const readings = rows.filter(
-    (row) => facilityFilterId(row.FacilityId) === facilityId,
+  const readings = rows.filter((row) =>
+    matchesFacilityFilter(facilityFilterId(row.FacilityId), facilityId),
   );
 
   return (

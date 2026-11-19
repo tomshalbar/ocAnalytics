@@ -6,7 +6,7 @@ import type { VisitRecommendation } from "@/domain/recommendation";
 type Props = {
   recommendation: VisitRecommendation;
   areaName: string;
-  gymName: string;
+  gymName?: string;
 };
 
 export function RecommendationCard({
@@ -17,12 +17,15 @@ export function RecommendationCard({
   return (
     <Card>
       <AppText variant="heading">
-        {recommendation.dayLabel} · {recommendation.timeLabel}
+        {recommendation.dayLabel}, {recommendation.timeLabel}
       </AppText>
-      <AppText variant="label">
-        {areaName} · {gymName}
+      <AppText variant="label" tone="muted">
+        {areaName}
+        {gymName ? ` · ${gymName}` : ""}
       </AppText>
-      <CrowdBadge level={recommendation.expectedCrowd} />
+      {recommendation.expectedCrowd !== "unknown" && (
+        <CrowdBadge level={recommendation.expectedCrowd} />
+      )}
       <AppText variant="caption" tone="muted">
         {recommendation.reason}
       </AppText>
